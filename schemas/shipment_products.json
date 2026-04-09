@@ -1,0 +1,78 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://github.com/werealldudes/statuses/schemas/status.json",
+    "title": "Shipment Products Event",
+    "description": "Describing the products shipment event.",
+    "type": "object",
+    "properties": {
+        "event_name": {
+            "description": "The name of the event.",
+            "type": "string"
+        },
+        "event_timestamp": {
+            "description": "The timestamp of the event.",
+            "type": "string",
+            "format": "date-time"
+        },
+        "event_id": {
+            "description": "The ID of the event.",
+            "type": "string"
+        },
+        "event_data": {
+            "description": "The data of the event.",
+            "type": "object",
+            "properties": {
+                "shipment_id": {
+                    "description": "The ID of the shipment.",
+                    "type": "string"
+                },
+                "shipment_business_id": {
+                    "description": "The business ID of the shipment.",
+                    "type": "string"
+                }, 
+                "shipment_type": {
+                    "description": "The type of the shipment.",
+                    "type": "string",
+                    "enum": [
+                        "ecommerce",
+                        "wholesale",
+                        "return"
+                    ]
+                }, 
+                "products": {
+                    "description": "The products of the shipment.",
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "product_id": {
+                                "description": "The ID of the product.",
+                                "type": "string"
+                            },
+                            "product_quantity": {
+                                "description": "The quantity of the product.",
+                                "type": "number"
+                            }
+                        },
+                        "required": [
+                            "product_id",
+                            "product_quantity"
+                        ]
+                    }
+                }
+            },
+            "required": [
+                "shipment_id",
+                "shipment_business_id",
+                "shipment_type",
+                "products"
+            ]
+        }
+    },
+    "required": [
+        "event_name",
+        "event_timestamp",
+        "event_id",
+        "event_data"
+    ]
+}

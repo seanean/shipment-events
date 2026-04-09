@@ -1,0 +1,12 @@
+{
+    "event_name": "shipmentStartEvent",
+    "event_timestamp": "2026-04-04T12:00:00Z",
+    "event_id": "e1",
+    "event_data": {
+        "shipment_id": "s1",
+        "shipment_business_id": "sh_1",
+        "shipment_type": "ecommerce",
+        "status": "start",
+        "status_timestamp": "2026-04-04T12:00:00Z"
+    }
+}

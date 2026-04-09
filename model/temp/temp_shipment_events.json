@@ -1,0 +1,297 @@
+{
+    "entities": [
+        {
+            "entity_id": "8ded130c-6a74-4e06-ad5a-465f5a8a628d",
+            "business_name": "Shipment",
+            "technical_name": "shipment",
+            "entity_type": "table",
+            "definition": "",
+            "attributes": [
+                {
+                    "attribute_id": "a32a5cad-e321-48f1-9ca8-e395860cd405",
+                    "business_name": "Shipment Universal Unique Identifier",
+                    "technical_name": "shipment_uuid",
+                    "data_type": "STRING",
+                    "definition": "",
+                    "attribute_order": 1,
+                    "key_type": "PRIMARY",
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "3c877f98-e1d7-4441-b0c1-af849477bad3",
+                    "business_name": "Shipment Business Identifier",
+                    "technical_name": "shipment_business_id",
+                    "data_type": "STRING",
+                    "definition": "",
+                    "attribute_order": 2,
+                    "key_type": "NATURAL",
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "1766b971-5fe3-429d-81e8-5d6f2ce406bf",
+                    "business_name": "Shipment Technical Identifier",
+                    "technical_name": "shipment_technical_id",
+                    "data_type": "STRING",
+                    "definition": "",
+                    "attribute_order": 3,
+                    "key_type": null,
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "a738eca4-4ccf-4441-8104-d22868553a38",
+                    "business_name": "Shipment Type",
+                    "technical_name": "shipment_type",
+                    "data_type": "STRING",
+                    "definition": "",
+                    "attribute_order": 4,
+                    "key_type": null,
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "1c155111-d99b-43b0-ba55-38cecfcf329f",
+                    "business_name": "Meta Source Event Ids",
+                    "technical_name": "meta_source_event_ids",
+                    "data_type": "STRING",
+                    "attribute_order": 5,
+                    "is_meta": true,
+                    "key_type": null
+                },
+                {
+                    "attribute_id": "f92e0bc4-27a7-4ff3-8cde-00e5cb5d4452",
+                    "business_name": "Meta Source Event Names",
+                    "technical_name": "meta_source_event_names",
+                    "data_type": "STRING",
+                    "attribute_order": 6,
+                    "is_meta": true,
+                    "key_type": null
+                },
+                {
+                    "attribute_id": "ac7084d6-8e22-4b3f-a941-091ae1e25c0b",
+                    "business_name": "Meta Insert Timestamp",
+                    "technical_name": "meta_insert_timestamp",
+                    "data_type": "TIMESTAMP",
+                    "attribute_order": 7,
+                    "is_meta": true,
+                    "key_type": null
+                },
+                {
+                    "attribute_id": "d054dca4-618b-4266-a6e8-44c57842877a",
+                    "business_name": "Meta Updated Timestamp",
+                    "technical_name": "meta_updated_timestamp",
+                    "data_type": "TIMESTAMP",
+                    "attribute_order": 8,
+                    "is_meta": true,
+                    "key_type": null
+                }
+            ]
+        },
+        {
+            "entity_id": "a1e51eee-9db7-4768-b3ba-39e5584d474e",
+            "business_name": "Shipment Products",
+            "technical_name": "shipment_products",
+            "entity_type": "table",
+            "definition": "",
+            "attributes": [
+                {
+                    "attribute_id": "9c223fc9-4365-4723-98b9-392f3224e582",
+                    "business_name": "Shipment Product Universal Unique Identifier",
+                    "technical_name": "shipment_product_uuid",
+                    "data_type": "STRING",
+                    "definition": "",
+                    "attribute_order": 1,
+                    "key_type": "PRIMARY",
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "f08403dc-0d9e-43da-9a45-eeae24c1ae14",
+                    "business_name": "Shipment Universal Unique Identifier",
+                    "technical_name": "shipment_uuid",
+                    "data_type": "STRING",
+                    "definition": "",
+                    "attribute_order": 2,
+                    "key_type": "FOREIGN",
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "028c2498-15ef-4dbd-b4d8-f078bb2caf06",
+                    "business_name": "Product Identifier",
+                    "technical_name": "product_id",
+                    "data_type": "STRING",
+                    "definition": "",
+                    "attribute_order": 3,
+                    "key_type": "NATURAL",
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "522ea304-3c1a-4492-a92e-6af44c4218a1",
+                    "business_name": "Product Quantity",
+                    "technical_name": "product_qty",
+                    "data_type": "INTEGER",
+                    "definition": "",
+                    "attribute_order": 4,
+                    "key_type": null,
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "6c6555e4-6881-4e56-b1ee-ae88971c155a",
+                    "business_name": "Meta Source Event Ids",
+                    "technical_name": "meta_source_event_ids",
+                    "data_type": "STRING",
+                    "attribute_order": 5,
+                    "is_meta": true,
+                    "key_type": null
+                },
+                {
+                    "attribute_id": "6fe150b8-6247-48df-97db-1eb0ab46f4a6",
+                    "business_name": "Meta Source Event Names",
+                    "technical_name": "meta_source_event_names",
+                    "data_type": "STRING",
+                    "attribute_order": 6,
+                    "is_meta": true,
+                    "key_type": null
+                },
+                {
+                    "attribute_id": "b8bc5389-aa19-44cc-8b8a-036a968b897f",
+                    "business_name": "Meta Insert Timestamp",
+                    "technical_name": "meta_insert_timestamp",
+                    "data_type": "TIMESTAMP",
+                    "attribute_order": 7,
+                    "is_meta": true,
+                    "key_type": null
+                },
+                {
+                    "attribute_id": "67de59d2-377d-4022-b272-1113d6d05d93",
+                    "business_name": "Meta Updated Timestamp",
+                    "technical_name": "meta_updated_timestamp",
+                    "data_type": "TIMESTAMP",
+                    "attribute_order": 8,
+                    "is_meta": true,
+                    "key_type": null
+                }
+            ]
+        },
+        {
+            "entity_id": "5a80c090-cc11-419f-b0dc-443c72b0857d",
+            "business_name": "Shipment Status",
+            "technical_name": "shipment_status",
+            "entity_type": "table",
+            "definition": "",
+            "attributes": [
+                {
+                    "attribute_id": "79d27a83-a85d-48a0-9cd5-2e2d7df2c4f6",
+                    "business_name": "Shipment Status Universal Unique Identifier",
+                    "technical_name": "shipment_status_uuid",
+                    "data_type": "STRING",
+                    "definition": "",
+                    "attribute_order": 1,
+                    "key_type": "PRIMARY",
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "78ee1a84-ca95-4d28-b0c1-abf49b9ba8f5",
+                    "business_name": "Shipment Universal Unique Identifier",
+                    "technical_name": "shipment_uuid",
+                    "data_type": "STRING",
+                    "definition": "",
+                    "attribute_order": 2,
+                    "key_type": "FOREIGN",
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "3295bd64-7f74-4ea9-a797-ae116f9c3b72",
+                    "business_name": "Shipment Status",
+                    "technical_name": "shipment_status",
+                    "data_type": "STRING",
+                    "definition": "",
+                    "attribute_order": 3,
+                    "key_type": "NATURAL",
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "6fc6eaa2-882c-4bbf-b8ab-f2c7aea7eba5",
+                    "business_name": "Shipment Status Timestamp",
+                    "technical_name": "shipment_status_tmst",
+                    "data_type": "TIMESTAMP",
+                    "definition": "",
+                    "attribute_order": 4,
+                    "key_type": null,
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "aa07cc93-b8aa-4a34-9be8-97660f7255cf",
+                    "business_name": "Meta Source Event Ids",
+                    "technical_name": "meta_source_event_ids",
+                    "data_type": "STRING",
+                    "attribute_order": 5,
+                    "is_meta": true,
+                    "key_type": null
+                },
+                {
+                    "attribute_id": "aaa00552-6ea7-4e54-a34e-596b6ca5447b",
+                    "business_name": "Meta Source Event Names",
+                    "technical_name": "meta_source_event_names",
+                    "data_type": "STRING",
+                    "attribute_order": 6,
+                    "is_meta": true,
+                    "key_type": null
+                },
+                {
+                    "attribute_id": "2630512e-2c4b-4d1c-82c4-960280a8dd7a",
+                    "business_name": "Meta Insert Timestamp",
+                    "technical_name": "meta_insert_timestamp",
+                    "data_type": "TIMESTAMP",
+                    "attribute_order": 7,
+                    "is_meta": true,
+                    "key_type": null
+                },
+                {
+                    "attribute_id": "ec10def5-b3e7-4098-ba30-ec9425091017",
+                    "business_name": "Meta Updated Timestamp",
+                    "technical_name": "meta_updated_timestamp",
+                    "data_type": "TIMESTAMP",
+                    "attribute_order": 8,
+                    "is_meta": true,
+                    "key_type": null
+                }
+            ]
+        }
+    ],
+    "meta": {
+        "created": "2026-04-09T12:36:24.760936Z",
+        "created_by": "Sean Murphy",
+        "description": "Curated, silver-layer model for shipment events.",
+        "modified": "2026-04-09T12:43:14.557413Z",
+        "name": "Shipment Events",
+        "technical_name": "shipment_events",
+        "version": "0.0.1"
+    },
+    "relationships": [
+        {
+            "relationship_id": "6deecb42-c718-4a7f-9830-04b308e814ee",
+            "parent_entity_id": "8ded130c-6a74-4e06-ad5a-465f5a8a628d",
+            "parent_attribute_id": "a32a5cad-e321-48f1-9ca8-e395860cd405",
+            "child_entity_id": "a1e51eee-9db7-4768-b3ba-39e5584d474e",
+            "child_attribute_id": "9c223fc9-4365-4723-98b9-392f3224e582",
+            "parent_mandatory": true,
+            "child_mandatory": false,
+            "parent_cardinality": "One",
+            "child_cardinality": "Many",
+            "cardinality": "1..1 : 0..*",
+            "relationship_name": "shipment.shipment_uuid 1..1 : 0..* shipment_products.shipment_product_uuid"
+        },
+        {
+            "relationship_id": "eb3bdf55-158e-4417-9c71-fbcf673d6bfa",
+            "parent_entity_id": "8ded130c-6a74-4e06-ad5a-465f5a8a628d",
+            "parent_attribute_id": "a32a5cad-e321-48f1-9ca8-e395860cd405",
+            "child_entity_id": "5a80c090-cc11-419f-b0dc-443c72b0857d",
+            "child_attribute_id": "79d27a83-a85d-48a0-9cd5-2e2d7df2c4f6",
+            "parent_mandatory": true,
+            "child_mandatory": false,
+            "parent_cardinality": "One",
+            "child_cardinality": "Many",
+            "cardinality": "1..1 : 0..*",
+            "relationship_name": "shipment.shipment_uuid 1..1 : 0..* shipment_status.shipment_status_uuid"
+        }
+    ],
+    "meta_fields_enabled": true
+}
