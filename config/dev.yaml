@@ -1,0 +1,9 @@
+shipment_status:
+  landing_zone_path: landing-zone/shipment_status
+  schema_path: schemas/shipment_status.json
+  raw_table: shipment_status
+
+shipment_products:
+  landing_zone_path: landing-zone/shipment_products
+  schema_path: schemas/shipment_products.json
+  raw_table: shipment_products

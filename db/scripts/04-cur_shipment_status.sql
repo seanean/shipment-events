@@ -9,3 +9,4 @@ CREATE TABLE cur.shipment_status (
     meta_updated_timestamp TIMESTAMP,
     PRIMARY KEY (shipment_status_uuid)
 );
+ALTER TABLE cur.shipment_status OWNER TO shrw;
