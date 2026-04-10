@@ -1,5 +1,5 @@
 .venv
-notes.md
-learnings.md
 .env
+learnings/*
 readme.md
+db/model/temp/*
