@@ -1,5 +1,6 @@
 .venv
 .env
+__pycache__
+db/model/temp/*
 learnings/*
 readme.md
-db/model/temp/*

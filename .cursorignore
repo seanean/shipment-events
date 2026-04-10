@@ -1,2 +1,5 @@
-learnings/notes/*
+.venv
+.env
+__pycache__
 db/model/temp/*
+learnings/notes/*
