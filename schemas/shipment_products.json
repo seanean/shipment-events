@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://github.com/werealldudes/statuses/schemas/status.json",
+    "$id": "https://github.com/seanean/shipment-events/schemas/shipment_products.json",
     "title": "Shipment Products Event",
     "description": "Describing the products shipment event.",
     "type": "object",

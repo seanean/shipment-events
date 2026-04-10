@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "$id": "https://github.com/werealldudes/statuses/schemas/status.json",
+    "$id": "https://github.com/seanean/shipment-events/schemas/shipment_status.json",
     "title": "Shipment Status Event",
     "description": "Describing the status event of a shipment.",
     "type": "object",
@@ -52,27 +52,6 @@
                     "description": "The timestamp of the status.",
                     "type": "string",
                     "format": "date-time"
-                },
-                "products": {
-                    "description": "The products of the shipment.",
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "product_id": {
-                                "description": "The ID of the product.",
-                                "type": "string"
-                            },
-                            "product_quantity": {
-                                "description": "The quantity of the product.",
-                                "type": "number"
-                            }
-                        },
-                        "required": [
-                            "product_id",
-                            "product_quantity"
-                        ]
-                    }
                 }
             },
             "required": [
@@ -80,8 +59,7 @@
                 "shipment_business_id",
                 "shipment_type",
                 "status",
-                "status_timestamp",
-                "products"
+                "status_timestamp"
             ]
         }
     },
