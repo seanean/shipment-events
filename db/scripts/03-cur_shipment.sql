@@ -1,6 +1,4 @@
-USE DATABASE shipments;
-USE SCHEMA cur;
-CREATE TABLE shipment (
+CREATE TABLE cur.shipment (
     shipment_uuid VARCHAR(255) NOT NULL,
     shipment_business_id VARCHAR(255) NOT NULL,
     shipment_technical_id VARCHAR(255) NOT NULL,

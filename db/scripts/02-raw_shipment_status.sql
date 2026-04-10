@@ -1,7 +1,4 @@
-USE DATABASE shipments;
-USE SCHEMA raw;
-
-CREATE TABLE shipment_status (
+CREATE TABLE raw.shipment_status (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     payload JSONB NOT NULL,
     event_id VARCHAR(255) NOT NULL,

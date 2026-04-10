@@ -1,7 +1,5 @@
-USE DATABASE shipments;
-USE SCHEMA cur;
-CREATE TABLE shipment_product (
-    shipment_product_uuid VARCHAR(255) NOT NULL REFERENCES shipment (shipment_uuid),
+CREATE TABLE cur.shipment_product (
+    shipment_product_uuid VARCHAR(255) NOT NULL REFERENCES cur.shipment (shipment_uuid),
     shipment_uuid VARCHAR(255) NOT NULL,
     product_id VARCHAR(255) NOT NULL,
     product_qty INTEGER NOT NULL,

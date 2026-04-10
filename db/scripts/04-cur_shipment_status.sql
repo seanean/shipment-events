@@ -1,7 +1,5 @@
-USE DATABASE shipments;
-USE SCHEMA cur;
-CREATE TABLE shipment_status (
-    shipment_status_uuid VARCHAR(255) NOT NULL REFERENCES shipment (shipment_uuid),
+CREATE TABLE cur.shipment_status (
+    shipment_status_uuid VARCHAR(255) NOT NULL REFERENCES cur.shipment (shipment_uuid),
     shipment_uuid VARCHAR(255) NOT NULL,
     shipment_status VARCHAR(255) NOT NULL,
     shipment_status_tmst TIMESTAMP NOT NULL,
