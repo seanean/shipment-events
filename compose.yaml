@@ -1,0 +1,32 @@
+name: shipment-events
+
+services:  
+  postgres-svc:
+    container_name: postgres-ctr
+    image: postgres:17.9-trixie
+    restart: unless-stopped # for if I want to specifically docker-compose stop postgres-svc to look at logs or crashes
+    env_file:
+      - .env
+    volumes:
+      # named mount for postgres db
+      - postgres_data:/var/lib/postgresql/data
+      # direct mount for lz import
+      - ./landing-zone:/landing-zone
+      # init script
+      - ./db/scripts:/docker-entrypoint-initdb.d/
+    ports:
+      - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""] # checks if db is ready and usable
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    mem_limit: 1G
+    cpu_count: 2
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: 1G
+volumes:
+  postgres_data:
