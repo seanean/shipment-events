@@ -6,3 +6,5 @@ id = uuid5(ROOT_NAMESPACE, 'sijgtjgoikorfkoerfmkemrf')
 
 print(ROOT_NAMESPACE)
 print(id)
+
+## this file was just testing uuid stuff, ill delete it later
