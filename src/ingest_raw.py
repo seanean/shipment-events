@@ -1,4 +1,5 @@
 import os
+import shutil
 import yaml
 import logging
 import json
@@ -17,7 +18,7 @@ def ingest_raw(data, envt):
     schema = get_schema(config['schema_path'])
     validator = validate_schema(schema)
 
-    for dirpath, dirnames, filenames in os.walk(config['landing_zone_path']):
+    for dirpath, dirnames, filenames in os.walk(config['landing_zone_pending_path']):
         for filename in filenames:
             filepath = os.path.join(dirpath, filename)
             logger.info(f"Dirpath: {dirpath}, Dirnames: {dirnames}, Filenames: {filenames}, Filepath: {filepath}, Processing file: {filename}")
@@ -25,18 +26,20 @@ def ingest_raw(data, envt):
             file = get_file(filepath)
             validate_file(file, validator)
             insert_to_raw_table(file, data)
+            archive_file(filename, filepath, config['landing_zone_archive_path'])
 
+    cleanup_pending_lz(config['landing_zone_pending_path'])
 
 def get_config(data, envt):
     with open(f"config/{envt}.yaml") as stream:
         config = yaml.safe_load(stream)
-        logger.info(f"Config: {config[data]}")
+        # logger.info(f"Config: {config[data]}")
     return config[data]
 
 def get_schema(schema_path):
     with open(schema_path) as stream:
         schema = json.load(stream)
-        logger.info(f"Schema: {schema}")
+        # logger.info(f"Schema: {schema}")
     return schema
 
 def validate_schema(schema):
@@ -47,7 +50,7 @@ def validate_schema(schema):
 def get_file(filepath):
     with open(filepath, 'r') as f:
         data = json.load(f)
-        logger.info(f"Data: {data}")
+        # logger.info(f"Data: {data}")
         return data
 
 def validate_file(file, validator):
@@ -61,7 +64,7 @@ def validate_file(file, validator):
 def insert_to_raw_table(file, data):
 
     insert_row = insert_row_builder(file, data)                        
-    logger.info(insert_row)
+    # logger.info(insert_row)
 
     engine = get_engine()
 
@@ -90,7 +93,21 @@ def insert_row_builder(file, data):
                         "event_name": file["event_name"]}]
         case _:
             raise ValueError(f"Whatcha talkin' bout Willis? Unknown raw table: {data}")
-        
+
+def archive_file(filename, filepath, archive_folder):
+    pending_dt_partition = os.path.basename(os.path.dirname(filepath))
+    archive_folder = os.path.join(archive_folder, pending_dt_partition)
+
+    if not os.path.exists(archive_folder):
+        os.makedirs(archive_folder)
+
+    destination_filepath = os.path.join(archive_folder, filename)
+    shutil.move(filepath, destination_filepath)
+
+def cleanup_pending_lz(pending_folder):
+    for dirpath, dirnames, filenames in os.walk(pending_folder):
+        if len(os.listdir(dirpath)) == 0:
+            os.rmdir(dirpath)
 
 def main():
     parser = argparse.ArgumentParser()
