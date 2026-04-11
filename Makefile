@@ -1,25 +1,28 @@
 .PHONY: setup raw
 
-VENV := .venv
-PYTHON := $(VENV)/bin/python
-PIP := $(VENV)/bin/pip
-
 setup:
-	python3 -m venv $(VENV)
-	$(PIP) install --upgrade pip
-	$(PIP) install -r requirements.txt
+	python3 -m venv .venv
+	.venv/bin/pip install --upgrade pip
+	.venv/bin/pip install -r requirements.txt
 
-raw:
-	@if [ ! -x "$(PYTHON)" ]; then \
+raw: # check if python exists and is executable
+	@if [ ! -x ".venv/bin/python" ]; then \
 		echo "Run 'make setup' first."; exit 1; \
 	fi
-	$(PYTHON) src/main.py
+	.venv/bin/python src/main.py
 
-dbup:
+composeup:
 	docker compose up -d
 
-dbdown:
+composedown:
 	docker compose down
 
-dbreset:
+resetall: # clean up the db and reset LZ
 	docker compose down && docker volume rm shipment-events_postgres_data
+	mv landing-zone/archive/* landing-zone/pending/
+
+resetdb: # clean up the db
+	docker compose down && docker volume rm shipment-events_postgres_data
+
+resetz: # reset LZ
+	mv landing-zone/archive/* landing-zone/pending/
