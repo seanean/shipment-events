@@ -15,5 +15,11 @@ raw:
 	fi
 	$(PYTHON) src/main.py
 
-compose:
+dbup:
 	docker compose up -d
+
+dbdown:
+	docker compose down
+
+dbreset:
+	docker compose down && docker volume rm shipment-events_postgres_data
