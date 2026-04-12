@@ -1,13 +1,15 @@
 shipment_status:
-  landing_zone_pending_path: landing-zone/pending/shipment_status
-  landing_zone_archive_path: landing-zone/archive/shipment_status
-  landing_zone_quarantine_path: landing-zone/quarantine/shipment_status
+  lz_pending_path: landing-zone/pending/shipment_status
+  lz_archive_path: landing-zone/archive/shipment_status/
+  lz_quarantine_path: landing-zone/quarantine/shipment_status
   schema_path: schemas/shipment_status.json
   raw_table: shipment_status
+  quarantine_table: shipment_status
 
 shipment_products:
-  landing_zone_pending_path: landing-zone/pending/shipment_products
-  landing_zone_archive_path: landing-zone/archive/shipment_products
-  landing_zone_quarantine_path: landing-zone/quarantine/shipment_products
+  lz_pending_path: landing-zone/pending/shipment_products
+  lz_archive_path: landing-zone/archive/shipment_products
+  lz_quarantine_path: landing-zone/quarantine/shipment_products
   schema_path: schemas/shipment_products.json
   raw_table: shipment_products
+  quarantine_table: shipment_products

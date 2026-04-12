@@ -3,6 +3,7 @@ import shutil
 import yaml
 import logging
 import json
+from pathlib import Path
 from jsonschema import Draft202012Validator, ValidationError
 from db import get_engine
 from sqlalchemy import text
@@ -12,43 +13,64 @@ from psycopg.types.json import Jsonb
 
 logger = logging.getLogger(__name__)
 
+# shipment-events(parent2) > src(parent1)>ingest_raw.py
+_REPO_ROOT_PATH = Path(__file__).resolve().parent.parent
+
+
 def ingest_raw(data, envt):
 
     logger.info(f'Ingesting raw for {data} in {envt} environment')
 
-    config = get_config(data, envt)
+    loaded_config = get_config(data, envt)
+    config = resolve_config(loaded_config)
 
     schema = get_schema(config['schema_path'])
     validator = validate_schema(schema)
 
-    for dirpath, dirnames, filenames in os.walk(config['landing_zone_pending_path']):
+    for dirpath, dirnames, filenames in os.walk(config['lz_pending_path']):
+        logger.info(f"Processing pending folder: {dirpath}")
         for filename in filenames:
-            filepath = os.path.join(dirpath, filename)
-            pending_dt_partition = os.path.basename(os.path.dirname(filepath))
-            logger.info(f"Processing file {filepath}")
+            pending_filepath = os.path.join(dirpath, filename)
+            pending_dt_partition = os.path.basename(dirpath)
+            logger.info(f"Processing file {pending_filepath}")
 
-            file = get_file(filepath)
+            pending_file = get_file(pending_filepath)
 
             try:
-                validate_file(file, validator)
+                validate_file(pending_file, validator)
             except ValidationError as e:
-                insert_to_table('quarantine', file, data, str(e), traceback.format_exc())
-                store_file(filename, filepath, pending_dt_partition, config['landing_zone_quarantine_path'])
+                insert_to_table('quarantine', pending_file, config['quarantine_table'], str(e), traceback.format_exc())
+                quarantine_folder = os.path.join(config['lz_quarantine_path'], pending_dt_partition)
+                store_file(filename, pending_filepath, quarantine_folder)
                 continue
 
-            insert_to_table('raw', file, data)
-            store_file(filename, filepath, pending_dt_partition, config['landing_zone_archive_path'])
+            insert_to_table('raw', pending_file, config['raw_table'])
+            archive_folder = os.path.join(config['lz_archive_path'], pending_dt_partition)
+            store_file(filename, pending_filepath, archive_folder)
 
-    cleanup_pending_lz(config['landing_zone_pending_path'])
+    cleanup_pending_lz(config['lz_pending_path'])
     logger.info(f"Pending folder cleanup successful")
 
 def get_config(data, envt):
     logger.info(f"Getting config for {data} in {envt} environment")
-    with open(f"config/{envt}.yaml") as stream:
+    config_path = _REPO_ROOT_PATH.joinpath(f"config/{envt}.yaml")
+    with open(config_path) as stream:
         config = yaml.safe_load(stream)
-        logger.info(f"Config retrieved successfully")
+        logger.info(f"Config retrieved successfully from {config_path}")
         logger.debug(f"Config for {data}: {config[data]}")
     return config[data]
+
+def resolve_config(loaded_config):
+    logger.info(f"Resolving config for loaded_config")
+    resolved_config = {
+        'lz_pending_path': _REPO_ROOT_PATH.joinpath(loaded_config['lz_pending_path']),
+        'lz_archive_path': _REPO_ROOT_PATH.joinpath(loaded_config['lz_archive_path']),
+        'lz_quarantine_path': _REPO_ROOT_PATH.joinpath(loaded_config['lz_quarantine_path']),
+        'schema_path': _REPO_ROOT_PATH.joinpath(loaded_config['schema_path']),
+        'raw_table': loaded_config['raw_table'],
+        'quarantine_table': loaded_config['quarantine_table']
+    }
+    return resolved_config
 
 def get_schema(schema_path):
     logger.info(f"Getting schema from {schema_path}")
@@ -85,9 +107,9 @@ def validate_file(file, validator):
         raise e
 
 
-def insert_to_table(schema, file, data, error_message=None, traceback_message=None):
-    logger.info(f"Inserting file into {schema} table for {data}")
-    insert_row = insert_row_builder(schema, file, data, error_message, traceback_message)                        
+def insert_to_table(db_schema, file, table, error_message=None, traceback_message=None):
+    logger.info(f"Inserting file into {db_schema}.{table}")
+    insert_row = insert_row_builder(db_schema, file, table, error_message, traceback_message)                        
     logger.info(f"Insert row builder successful")
     logger.debug(f"Insert row: {insert_row}")
 
@@ -95,29 +117,27 @@ def insert_to_table(schema, file, data, error_message=None, traceback_message=No
     logger.info(f"Engine retrieved successfully")
     logger.debug(f"Engine: {engine}")
 
-    insert_qry = get_insert_statement(schema, data)
+    insert_qry = get_insert_statement(db_schema, table)
 
     with engine.begin() as conn:
         logger.info(f"Executing insert query")
         conn.execute(text(insert_qry),insert_row,)
         logger.info(f"Insert query executed successfully")
-        result = conn.execute(text(f"select count(1) from {schema}.{data};")).mappings().all()
-        logger.info(f"{schema}.{data} row count: {result[0]['count']}")
 
-def get_insert_statement(schema, data):
-    logger.info(f"Getting insert query for {schema} {data}")
-    path = f"db/sql/{schema}/{schema}_{data}_insert.sql"
+def get_insert_statement(db_schema, table):
+    logger.info(f"Getting insert query for {db_schema} {table}")
+    path = _REPO_ROOT_PATH.joinpath(f"db/sql/{db_schema}/{db_schema}_{table}_insert.sql")
     with open(path, encoding="utf-8") as f:
         insert_qry = f.read()
         logger.info(f"Insert query retrieved successfully")
         logger.debug(f"Insert query: {insert_qry}")
         return insert_qry
 
-def insert_row_builder(schema, file, data, error_message, traceback_message):
-    logger.info(f"Building insert row for {schema} {data}")
+def insert_row_builder(db_schema, file, table, error_message, traceback_message):
+    logger.info(f"Building insert row for {db_schema}.{table}")
 
     meta_insert_timestamp = datetime.now(UTC)
-    match (schema, data):
+    match (db_schema, table):
         case ("raw", "shipment_status"):
             return {"payload": Jsonb(file), "event_id": file["event_id"],
                         "event_timestamp": file["event_timestamp"],
@@ -143,26 +163,25 @@ def insert_row_builder(schema, file, data, error_message, traceback_message):
                         "traceback_message": traceback_message,
                         "meta_insert_timestamp": meta_insert_timestamp}
         case _:
-            logger.error(f"Whatcha talkin' bout Willis? Unknown {schema} and/or table: {data}")
-            raise ValueError(f"Whatcha talkin' bout Willis? Unknown {schema} and/or table: {data}")
+            logger.error(f"Whatcha talkin' bout Willis? Unknown table: {db_schema}.{table}")
+            raise ValueError(f"Whatcha talkin' bout Willis? Unknown table: {db_schema}.{table}")
 
-def store_file(filename, filepath, pending_dt_partition, target_folder):
-    target_partition_folder = os.path.join(target_folder, pending_dt_partition)
-    logger.info(f"Storing file {filename} from {filepath} to {target_partition_folder}")
+def store_file(filename, source_filepath, target_folder):
+    logger.info(f"Moving file {filename} from {source_filepath} to {target_folder}")
     
-    if not os.path.exists(target_partition_folder):
-        logger.info(f"Target folder {target_partition_folder} does not exist, creating it")
-        os.makedirs(target_partition_folder)
-        logger.info(f"Target folder {target_partition_folder} created successfully")
+    if not os.path.exists(target_folder):
+        logger.info(f"Target folder {target_folder} does not exist, creating it")
+        os.makedirs(target_folder)
+        logger.info(f"Target folder {target_folder} created successfully")
 
-    destination_filepath = os.path.join(target_partition_folder, filename)
-    shutil.move(filepath, destination_filepath)
-    logger.info(f"File {filename} stored successfully to {destination_filepath}")
+    destination_filepath = os.path.join(target_folder, filename)
+    shutil.move(source_filepath, destination_filepath)
+    logger.info(f"File {filename} moved successfully to {destination_filepath}")
 
 
 def cleanup_pending_lz(pending_folder):
     logger.info(f"Cleaning up pending folder {pending_folder}")
-    for dirpath, dirnames, filenames in os.walk(pending_folder):
+    for dirpath, dirnames, filenames in os.walk(pending_folder, topdown=False):
         if len(os.listdir(dirpath)) == 0:
             logger.info(f"Pending folder {dirpath} is empty, removing it")
             os.rmdir(dirpath)
