@@ -32,6 +32,7 @@ In the readme I think I'll give updates on each phase of the project, but for no
 ### Expanded list of things I thought about and don't want to forget
 
 - `Reprocessing`
+- `Dead letter queue`
 
 ## How am I developing it?
 
@@ -111,3 +112,40 @@ I kept working at night; I noticed the easiest time to work when you have a baby
 | Topic | Learning |
 | --- | --- |
 |Avoiding multiple raw loads|I considered different approaches: 1) moving files after processing. 2) maintaining a log of files which were processed. 3) relying on unique inserts to avoid double loading. 4). trying to replicate databricks checkpoint logic. 5) tracking processed partitions. </br> </br> what I landed on was option 1) as it seems quite simple, and I think for reprocessing we can just add logic to load from the archive folder rather than the pending folder (to avoid having to move files back).|
+
+
+## Day 4 [Phase 2]
+
+### Did
+- Decided on approach to follow for payloads that don't conform to schema:
+```
+    validate vs schema
+
+    if fails
+        write file, error, metadata to quarantine.invalid_events
+        move file to lz/quarantine
+        go to next file
+
+    continue normal logic
+```
+- reordered raw table columns, also changed varchar(x) to varchar
+- added meta_insert_timestamp to raw and quarantine so you can see when records are added.
+- created quarantine tables
+- created some bad events
+- consolidated insert / row building / file movement logic to functions that can be used for both archiving and quarantining payloads
+- cleaned up my db/access setup. the tables were being created by the superuser, so the grant default privileges to other users I had set up was not working. `02-rw-run-ddl.sh` now logs in as shrw and runs all DDLs, which gives shr and shcon access to query.
+
+### Learned
+
+| Topic | Learning |
+| --- | --- |
+|Dead letter queues| Can vary in terms of how they are implemented, but generally the point of a DLQ is to track payloads that have problems, generally so you can do something about it. </br> </br> Here are some options at varying levels of complexity:<ul><li>Try catching validation, logging problem files & skipping, go to next file.</li><li>Try catching validation, logging problem files, storing files in a folder, storing info in a db schema, skipping, go to next file.</li><li>Try catching validation, logging problem files, posting problem files on team's own DLQ topic that team can use for replay processing</li><li>Maybe adding some reporting on errors.</li></ul> |
+|rsync instead of mv| mv doesn't work well if there are files existing in the folder we're copying to. in the makefile I have make resetall / make resetlz which moves stuff from the archive back to the landing-zone. I swapped it out with rsync + rm -rf to allow for merging of archive back to the LZ. this does mean that if the same filename is in archive and in LZ, the LZ would be overwritten. This is more of a dev tool so for me that's fine. |
+| compose up --wait | beautiful, I can use my health check to know when things are good to go. (I kept hitting errors by `make raw`ing too soon.) |
+|bash|I get why there's a running joke about everything being based on a bash script and a cron job. Seems like such a flexible tool. Happy with the reworked init.|
+
+### Other thoughts
+
+I don't really like how I'm doing my `insert_row_builder`s. I'll probably think of another way to do it eventually.
+I should probably add some aggregate logging. (ingested x files, archived x, quarantined x, start partition, end partition, etc.)
+I'll look into how to implement testing before I go to cleansed probably.
