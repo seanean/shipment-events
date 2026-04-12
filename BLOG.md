@@ -29,6 +29,10 @@ In the readme I think I'll give updates on each phase of the project, but for no
 - `Checkpoints`
 - `Airflow`
 
+### Expanded list of things I thought about and don't want to forget
+
+- `Reprocessing`
+
 ## How am I developing it?
 
 I'm mostly writing things by hand. I'm doing a lot of googling, watching videos, and reading documentation. I'm also using a lot of AI, but **I am not vibe coding this pipeline**.
@@ -43,7 +47,7 @@ How I am using AI:
 
 ---
 
-## Day 1
+## Day 1 [Phase 1]
 
 ### Did
 
@@ -63,7 +67,7 @@ How I am using AI:
 
 ---
 
-## Day 2 (and 3)
+## Day 2 (and 3) [Phase 1]
 _My router decided to pick a fight with me at the end of day 2 so I didn't get to do my write up._
 
 ### Did
@@ -73,7 +77,7 @@ _My router decided to pick a fight with me at the end of day 2 so I didn't get t
 - A lot of work on phase 1.
 - Cleaned up the blog and readme.
 
-### What have I learned today?
+### Learned
 
 | Topic | Learning |
 | --- | --- |
@@ -89,3 +93,21 @@ _My router decided to pick a fight with me at the end of day 2 so I didn't get t
 | SQLAlchemy | seems quite simple to work with. I still haven't mastered the concepts of connection pooling and managing sessions. For now I got querying working with the engine as a singleton. Later I'll look more into optimizing the pattern.|
 | sequencing permissions for tables | I have a bit of a funky order for this because I'm creating this on DB initialization. Normally an engineering team wouldn't be creating tables on DB initialization with root users, they'd make their own tables. As I am, I need to change the ownership to the engineering role to pretend that they made it. This allows user `shrw` to insert / delete / whatever, once the database is running. What this means for me is that my pattern in this project isn't exactly 'real', but that's ok I suppose.|
 | Exception handling | I spent a lot of time looking at the different ways to handle (or not handle) exceptions. It's still not clear to me what the best approach is. I feel I will need balance between try catching everything in existence vs nothing. I think it will also pair with how I approach logging. Definitely something REQUIRED for when I get to a more mature 'this is a pipeline' phase, but for now I'll see how much I do. | 
+
+
+## Day 3.5 [Phase 1]
+I kept working at night; I noticed the easiest time to work when you have a baby is when it is sleeping.
+
+### Did
+- Added a LZ pending and LZ archive setup
+- Automatically cleaning LZ pending after a file is loaded successfully
+- Cleaning up empty LZ pending folders after raw ingest
+- Added more make commands to reset the environment: `make resetall` `make resetdb` `make resetlz`
+- Renamed compose make commands to `make composeup` and `make composedown` as that just sounds better to me than dbup/dbdown.
+- Added better logging.
+
+### Learned
+
+| Topic | Learning |
+| --- | --- |
+|Avoiding multiple raw loads|I considered different approaches: 1) moving files after processing. 2) maintaining a log of files which were processed. 3) relying on unique inserts to avoid double loading. 4). trying to replicate databricks checkpoint logic. 5) tracking processed partitions. </br> </br> what I landed on was option 1) as it seems quite simple, and I think for reprocessing we can just add logic to load from the archive folder rather than the pending folder (to avoid having to move files back).|

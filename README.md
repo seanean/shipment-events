@@ -30,26 +30,32 @@ project-structure/
 ### Running this bad boy
 
 - `make setup` - install dependencies
-- `make dbup` - spin up that postgres db!!!
+- `make composeup` - spin up that postgres db!!!
+- `make composedown` - spin down that postgres db!!!
 - `make raw` - ingest files to the raw tables
-- `make dbdown` - compose down
-- `make dbreset` - compose down & remove the volume (so it starts fresh)
+- `make resetall` - compose down, remove volume, move files back to LZ/pending
+- `make resetdb` - compose down, remove volume
+- `make resetlz` - move files back to LZ/pending
 
 ---
 
 ## Version Updates
 
-### Phase 1 - LZ -> Raw - 2026-04-11
+### Phase 1 - LZ -> Raw - 2026-04-12
 
-I've got a first version raw working! (_ok it can use some improvement, but we can load the raw tables!)_
+I've got a first version raw working!
 
 What I did:
+- design event schemas
+- create dummy events
+- spin up postgres in docker
+- create raw ddls
+- set up postgres schemas/table
+- set up postgres users & permissions for admin, rw, r, consumer
+- setup raw ingestion flow pictured below (using rw role)
+
 <h1 align="center">
   <img src="resources/phase-1.png" alt="Shipment Events Phase 1" width="950" height="600">
 </h1>
 
 (This diagram doesn't follow any standard, it's just a combination of stuff to show generally how this phase works)
-
-Some to-dos before next phase (LZ -> Quarantine):
-- Some way of checkpointing LZ files so I don't load them multiple times (I don't know yet what pattern makes the most sense and fits best with future setup, will investigate.)
-- Add some more comprehensive logging and exception handling.
