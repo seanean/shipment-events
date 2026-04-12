@@ -6,6 +6,7 @@ CREATE TABLE quarantine.shipment_products (
     payload JSONB NOT NULL,
     error_message VARCHAR NOT NULL,
     traceback_message VARCHAR NOT NULL,
-    meta_insert_timestamp TIMESTAMP
+    meta_insert_timestamp TIMESTAMP NOT NULL,
+    meta_source_file_path VARCHAR NOT NULL
 );
 ALTER TABLE quarantine.shipment_products OWNER TO shrw;

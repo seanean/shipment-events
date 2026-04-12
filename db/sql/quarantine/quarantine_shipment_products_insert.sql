@@ -5,7 +5,8 @@ INSERT INTO quarantine.shipment_products (
     payload,
     error_message,
     traceback_message,
-    meta_insert_timestamp
+    meta_insert_timestamp,
+    meta_source_file_path
 )
 VALUES (
     :event_id,
@@ -14,5 +15,6 @@ VALUES (
     :payload,
     :error_message,
     :traceback_message,
-    :meta_insert_timestamp
+    :meta_insert_timestamp,
+    :meta_source_file_path
 )

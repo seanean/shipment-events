@@ -39,14 +39,24 @@ def ingest_raw(data, envt):
             try:
                 validate_file(pending_file, validator)
             except ValidationError as e:
-                insert_to_table('quarantine', pending_file, config['quarantine_table'], str(e), traceback.format_exc())
+                # flow for invalid data
+                insert_to_table('quarantine', pending_file, config['quarantine_table'], pending_filepath, str(e), traceback.format_exc())
                 quarantine_folder = os.path.join(config['lz_quarantine_path'], pending_dt_partition)
-                store_file(filename, pending_filepath, quarantine_folder)
+                try:
+                    store_file(filename, pending_filepath, quarantine_folder)
+                except Exception as e:
+                    logger.error(f"Error moving file {filename} to quarantine folder: {e}")
+                    rollback_insert('raw', config['quarantine_table'], pending_filepath)
                 continue
 
-            insert_to_table('raw', pending_file, config['raw_table'])
+            # flow for valid data
+            insert_to_table('raw', pending_file, config['raw_table'], pending_filepath)
             archive_folder = os.path.join(config['lz_archive_path'], pending_dt_partition)
-            store_file(filename, pending_filepath, archive_folder)
+            try:
+                store_file(filename, pending_filepath, archive_folder)
+            except Exception as e:
+                logger.error(f"Error moving file {filename} to archive folder: {e}")
+                rollback_insert('raw', config['raw_table'], pending_filepath)
 
     cleanup_pending_lz(config['lz_pending_path'])
     logger.info(f"Pending folder cleanup successful")
@@ -107,9 +117,9 @@ def validate_file(file, validator):
         raise e
 
 
-def insert_to_table(db_schema, file, table, error_message=None, traceback_message=None):
+def insert_to_table(db_schema, file, table, source_filepath, error_message=None, traceback_message=None):
     logger.info(f"Inserting file into {db_schema}.{table}")
-    insert_row = insert_row_builder(db_schema, file, table, error_message, traceback_message)                        
+    insert_row = insert_row_builder(db_schema, file, table, source_filepath, error_message, traceback_message)                        
     logger.info(f"Insert row builder successful")
     logger.debug(f"Insert row: {insert_row}")
 
@@ -133,7 +143,7 @@ def get_insert_statement(db_schema, table):
         logger.debug(f"Insert query: {insert_qry}")
         return insert_qry
 
-def insert_row_builder(db_schema, file, table, error_message, traceback_message):
+def insert_row_builder(db_schema, file, table, source_filepath, error_message, traceback_message):
     logger.info(f"Building insert row for {db_schema}.{table}")
 
     meta_insert_timestamp = datetime.now(UTC)
@@ -142,26 +152,30 @@ def insert_row_builder(db_schema, file, table, error_message, traceback_message)
             return {"payload": Jsonb(file), "event_id": file["event_id"],
                         "event_timestamp": file["event_timestamp"],
                         "event_name": file["event_name"],
-                        "meta_insert_timestamp": meta_insert_timestamp}
+                        "meta_insert_timestamp": meta_insert_timestamp,
+                        "meta_source_file_path": source_filepath}
         case ("raw", "shipment_products"):
             return {"payload": Jsonb(file), "event_id": file["event_id"],
                         "event_timestamp": file["event_timestamp"],
                         "event_name": file["event_name"],
-                        "meta_insert_timestamp": meta_insert_timestamp}
+                        "meta_insert_timestamp": meta_insert_timestamp,
+                        "meta_source_file_path": source_filepath}
         case ("quarantine", "shipment_status"):
             return {"payload": Jsonb(file), "event_id": file["event_id"],
                         "event_timestamp": file["event_timestamp"],
                         "event_name": file["event_name"],
                         "error_message": error_message,
                         "traceback_message": traceback_message,
-                        "meta_insert_timestamp": meta_insert_timestamp}
+                        "meta_insert_timestamp": meta_insert_timestamp,
+                        "meta_source_file_path": source_filepath}
         case ("quarantine", "shipment_products"):
             return {"payload": Jsonb(file), "event_id": file["event_id"],
                         "event_timestamp": file["event_timestamp"],
                         "event_name": file["event_name"],
                         "error_message": error_message,
                         "traceback_message": traceback_message,
-                        "meta_insert_timestamp": meta_insert_timestamp}
+                        "meta_insert_timestamp": meta_insert_timestamp,
+                        "meta_source_file_path": source_filepath}
         case _:
             logger.error(f"Whatcha talkin' bout Willis? Unknown table: {db_schema}.{table}")
             raise ValueError(f"Whatcha talkin' bout Willis? Unknown table: {db_schema}.{table}")
@@ -178,6 +192,14 @@ def store_file(filename, source_filepath, target_folder):
     shutil.move(source_filepath, destination_filepath)
     logger.info(f"File {filename} moved successfully to {destination_filepath}")
 
+def rollback_insert(db_schema, table, source_filepath):
+    logger.info(f"Rolling back insert for {db_schema}.{table}")
+    delete_qry = f"DELETE FROM {db_schema}.{table} WHERE meta_source_file_path = :meta_source_file_path"
+    engine = get_engine()
+    with engine.begin() as conn:
+        logger.info(f"Executing delete query")
+        conn.execute(text(delete_qry), {"meta_source_file_path": source_filepath})
+        logger.info(f"Delete query executed successfully")
 
 def cleanup_pending_lz(pending_folder):
     logger.info(f"Cleaning up pending folder {pending_folder}")

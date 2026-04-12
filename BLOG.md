@@ -34,6 +34,10 @@ In the readme I think I'll give updates on each phase of the project, but for no
 - `Reprocessing`
 - `Dead letter queue`
 
+### Known weaknesses
+
+- `No concurrency` - currently, I haven't done anything to allow multiple versions of the pipeline to run at the same time. There's some cleanup logic that could impact continuous loading / removing of data. My guess: look at this when piping tons of events in or maybe when I try PySpark?
+
 ## How am I developing it?
 
 I'm mostly writing things by hand. I'm doing a lot of googling, watching videos, and reading documentation. I'm also using a lot of AI, but **I am not vibe coding this pipeline**.
@@ -135,6 +139,11 @@ I kept working at night; I noticed the easiest time to work when you have a baby
 - consolidated insert / row building / file movement logic to functions that can be used for both archiving and quarantining payloads
 - cleaned up my db/access setup. the tables were being created by the superuser, so the grant default privileges to other users I had set up was not working. `02-rw-run-ddl.sh` now logs in as shrw and runs all DDLs, which gives shr and shcon access to query.
 
+part 2:
+- added meta_source_file_path so I can see where files came from
+- added a rollback on the insert in case file move to archive/quarantine fails
+- reworked paths so they are based on the repo root instead of relative. No longer constructing any paths based on user input (yikes).
+
 ### Learned
 
 | Topic | Learning |
@@ -147,5 +156,7 @@ I kept working at night; I noticed the easiest time to work when you have a baby
 ### Other thoughts
 
 I don't really like how I'm doing my `insert_row_builder`s. I'll probably think of another way to do it eventually.
+
 I should probably add some aggregate logging. (ingested x files, archived x, quarantined x, start partition, end partition, etc.)
+
 I'll look into how to implement testing before I go to cleansed probably.
