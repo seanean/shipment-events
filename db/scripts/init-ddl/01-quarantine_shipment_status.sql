@@ -5,6 +5,7 @@ CREATE TABLE quarantine.shipment_status (
     event_name VARCHAR NOT NULL,
     payload JSONB NOT NULL,
     error_message VARCHAR NOT NULL,
+    traceback_message VARCHAR NOT NULL,
     meta_insert_timestamp TIMESTAMP
 );
 ALTER TABLE quarantine.shipment_status OWNER TO shrw;
