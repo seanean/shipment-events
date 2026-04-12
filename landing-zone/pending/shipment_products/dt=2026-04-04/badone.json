@@ -1,0 +1,18 @@
+{
+    "event_name": "shipmentProductsAllocated",
+    "event_timestamp": "2026-04-04T12:30:00Z",
+    "event_id": "e3",
+    "event_data": {
+        "shipment_id": "s2",
+        "products": [
+            {
+                "product_id": "p3",
+                "product_quantity": 8
+            },
+            {
+                "product_id": "p4",
+                "product_quantity": 12
+            }
+        ]
+    }
+}

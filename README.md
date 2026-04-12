@@ -41,7 +41,22 @@ project-structure/
 
 ## Version Updates
 
-### Phase 1 - LZ -> Raw - 2026-04-12
+### Phase 2 - LZ -> Quarantine - 2026-04-12
+
+Now that's what I call quarantining.
+
+What I did:
+- added DDLs + inserts + logic to support quarantining events that fail the schema validation
+- reworked access setup have tables be created by engineering role
+- consolidated some logic that is used by both good and bad events (getting queries, inserting to db, moving files)
+
+
+<h1 align="center">
+  <img src="resources/shipment-events - phase-2.png" alt="Shipment Events Phase 2" width="950">
+</h1>
+
+
+### Phase 1 - LZ -> Raw - 2026-04-12 (night)
 
 I've got a first version raw working!
 
@@ -55,7 +70,7 @@ What I did:
 - setup raw ingestion flow pictured below (using rw role)
 
 <h1 align="center">
-  <img src="resources/phase-1.png" alt="Shipment Events Phase 1" width="950" height="600">
+  <img src="resources/shipment-events - phase-1.png" alt="Shipment Events Phase 1" width="950">
 </h1>
 
 (This diagram doesn't follow any standard, it's just a combination of stuff to show generally how this phase works)
