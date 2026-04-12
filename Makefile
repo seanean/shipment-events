@@ -12,17 +12,24 @@ raw: # check if python exists and is executable
 	.venv/bin/python src/main.py
 
 composeup:
-	docker compose up -d
+	docker compose up -d --wait
+	@echo "PostgreSQL is ready to use."
 
 composedown:
 	docker compose down
 
 resetall: # clean up the db and reset LZ
 	docker compose down && docker volume rm shipment-events_postgres_data
-	mv landing-zone/archive/* landing-zone/pending/
+	rsync -a landing-zone/archive/ landing-zone/pending/
+	rm -rf landing-zone/archive/*
+	rsync -a landing-zone/quarantine/ landing-zone/pending/
+	rm -rf landing-zone/quarantine/*
 
 resetdb: # clean up the db
 	docker compose down && docker volume rm shipment-events_postgres_data
 
-resetz: # reset LZ
-	mv landing-zone/archive/* landing-zone/pending/
+resetlz: # reset LZ
+	rsync -a landing-zone/archive/ landing-zone/pending/
+	rm -rf landing-zone/archive/*
+	rsync -a landing-zone/quarantine/ landing-zone/pending/
+	rm -rf landing-zone/quarantine/*
