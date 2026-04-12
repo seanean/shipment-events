@@ -14,11 +14,11 @@ def configure_logger() -> logging.Logger:
         # create fileHandler for logging to send data to file
         #file_handler = logging.FileHandler(datetime.now().strftime('%Y-%m-%d_%H-%M_madalier.log'))
         #file_handler.encoding = 'utf-8'
-        #file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
+        #file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(name)s %(funcName)s %(message)s'))
 
         # create streamHandler to send to terminal
         stream_handler = logging.StreamHandler(sys.stdout)
-        stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(message)s'))
+        stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(name)s %(funcName)s %(message)s'))
 
         # add handlers to the logger
         logger.addHandler(stream_handler)
