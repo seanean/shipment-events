@@ -1,4 +1,4 @@
-.PHONY: setup raw
+.PHONY: setup raw test
 
 setup:
 	python3 -m venv .venv
@@ -33,3 +33,9 @@ resetlz: # reset LZ
 	rm -rf landing-zone/archive/*
 	rsync -a landing-zone/quarantine/ landing-zone/pending/
 	rm -rf landing-zone/quarantine/*
+
+test:
+	@if [ ! -x ".venv/bin/python" ]; then \
+		echo "Run 'make setup' first."; exit 1; \
+	fi
+	.venv/bin/pytest -v
