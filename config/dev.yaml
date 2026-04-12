@@ -1,6 +1,6 @@
 shipment_status:
   lz_pending_path: landing-zone/pending/shipment_status
-  lz_archive_path: landing-zone/archive/shipment_status/
+  lz_archive_path: landing-zone/archive/shipment_status
   lz_quarantine_path: landing-zone/quarantine/shipment_status
   schema_path: schemas/shipment_status.json
   raw_table: shipment_status
