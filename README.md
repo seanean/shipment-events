@@ -53,6 +53,9 @@ What I did:
 Evening Update:
 - Added pytest and some unit tests, many more to go!
 
+2026-04-13 Update:
+- More tests and refactoring!
+
 
 <h1 align="center">
   <img src="resources/shipment-events - phase-2.png" alt="Shipment Events Phase 2" width="950">

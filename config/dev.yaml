@@ -3,13 +3,21 @@ shipment_status:
   lz_archive_path: landing-zone/archive/shipment_status
   lz_quarantine_path: landing-zone/quarantine/shipment_status
   schema_path: schemas/shipment_status.json
+  raw_db_schema: raw
   raw_table: shipment_status
+  raw_insert_sql_path: db/sql/raw/raw_shipment_status_insert.sql
+  quarantine_db_schema: quarantine
   quarantine_table: shipment_status
+  quarantine_insert_sql_path: db/sql/quarantine/quarantine_shipment_status_insert.sql
 
 shipment_products:
   lz_pending_path: landing-zone/pending/shipment_products
   lz_archive_path: landing-zone/archive/shipment_products
   lz_quarantine_path: landing-zone/quarantine/shipment_products
   schema_path: schemas/shipment_products.json
+  raw_db_schema: raw
   raw_table: shipment_products
+  raw_insert_sql_path: db/sql/raw/raw_shipment_products_insert.sql
+  quarantine_db_schema: quarantine
   quarantine_table: shipment_products
+  quarantine_insert_sql_path: db/sql/quarantine/quarantine_shipment_products_insert.sql

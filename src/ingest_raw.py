@@ -21,7 +21,8 @@ def ingest_raw(data, envt):
 
     logger.info(f'Ingesting raw for {data} in {envt} environment')
 
-    loaded_config = get_config(data, envt)
+    config_path = _REPO_ROOT_PATH.joinpath(f"config/{envt}.yaml")
+    loaded_config = get_config(data, config_path)
     config = resolve_config(loaded_config)
 
     schema = get_schema(config['schema_path'])
@@ -40,33 +41,33 @@ def ingest_raw(data, envt):
                 validate_file(pending_file, validator)
             except ValidationError as e:
                 # flow for invalid data
-                insert_to_table('quarantine', pending_file, config['quarantine_table'], pending_filepath, str(e), traceback.format_exc())
+                insert_to_table(config['quarantine_insert_sql_path'],config['quarantine_target_table'], pending_file,
+                                pending_filepath, str(e), traceback.format_exc())
                 quarantine_folder = os.path.join(config['lz_quarantine_path'], pending_dt_partition)
                 try:
                     store_file(filename, pending_filepath, quarantine_folder)
                 except Exception as e:
                     logger.error(f"Error moving file {filename} to quarantine folder: {e}")
-                    rollback_insert('quarantine', config['quarantine_table'], pending_filepath)
+                    rollback_insert(config['quarantine_target_table'], pending_filepath)
                 continue
 
             # flow for valid data
-            insert_to_table('raw', pending_file, config['raw_table'], pending_filepath)
+            insert_to_table(config['raw_insert_sql_path'], config['raw_target_table'], pending_file, pending_filepath)
             archive_folder = os.path.join(config['lz_archive_path'], pending_dt_partition)
             try:
                 store_file(filename, pending_filepath, archive_folder)
             except Exception as e:
                 logger.error(f"Error moving file {filename} to archive folder: {e}")
-                rollback_insert('raw', config['raw_table'], pending_filepath)
+                rollback_insert(config['raw_target_table'], pending_filepath)
 
     cleanup_pending_lz(config['lz_pending_path'])
     logger.info(f"Pending folder cleanup successful")
 
-def get_config(data, envt):
-    logger.info(f"Getting config for {data} in {envt} environment")
-    config_path = _REPO_ROOT_PATH.joinpath(f"config/{envt}.yaml")
+def get_config(data, config_path):
+    logger.info(f"Getting config for {data} from {config_path}")
     with open(config_path) as stream:
         config = yaml.safe_load(stream)
-        logger.info(f"Config retrieved successfully from {config_path}")
+        logger.info(f"Config retrieved successfully")
         logger.debug(f"Config for {data}: {config[data]}")
     return config[data]
 
@@ -77,8 +78,11 @@ def resolve_config(loaded_config):
         'lz_archive_path': _REPO_ROOT_PATH.joinpath(loaded_config['lz_archive_path']),
         'lz_quarantine_path': _REPO_ROOT_PATH.joinpath(loaded_config['lz_quarantine_path']),
         'schema_path': _REPO_ROOT_PATH.joinpath(loaded_config['schema_path']),
-        'raw_table': loaded_config['raw_table'],
-        'quarantine_table': loaded_config['quarantine_table']
+        'raw_insert_sql_path': _REPO_ROOT_PATH.joinpath(loaded_config['raw_insert_sql_path']),
+        'quarantine_insert_sql_path': _REPO_ROOT_PATH.joinpath(loaded_config['quarantine_insert_sql_path']),
+        'raw_target_table': f'{loaded_config['raw_db_schema']}.{loaded_config['raw_table']}',
+        'quarantine_target_table': f'{loaded_config['quarantine_db_schema']}.{loaded_config['quarantine_table']}'
+        # if at some point it's needed, we can also resolve the raw_table and raw_db_schema parameters
     }
     return resolved_config
 
@@ -123,9 +127,9 @@ def validate_file(file, validator):
         raise e
 
 
-def insert_to_table(db_schema, file, table, source_filepath, error_message=None, traceback_message=None):
-    logger.info(f"Inserting file into {db_schema}.{table}")
-    insert_row = insert_row_builder(db_schema, file, table, source_filepath, error_message, traceback_message, meta_insert_timestamp=datetime.now(UTC))                        
+def insert_to_table(insert_sql_path, target_table, file, source_filepath, error_message=None, traceback_message=None):
+    logger.info(f"Inserting file into {target_table}")
+    insert_row = insert_row_builder(target_table, file, source_filepath, error_message, traceback_message, datetime.now(UTC))                        
     logger.info(f"Insert row builder successful")
     logger.debug(f"Insert row: {insert_row}")
 
@@ -133,39 +137,38 @@ def insert_to_table(db_schema, file, table, source_filepath, error_message=None,
     logger.info(f"Engine retrieved successfully")
     logger.debug(f"Engine: {engine}")
 
-    insert_qry = get_insert_statement(db_schema, table)
+    insert_qry = get_insert_statement(insert_sql_path)
 
     with engine.begin() as conn:
         logger.info(f"Executing insert query")
         conn.execute(text(insert_qry),insert_row,)
         logger.info(f"Insert query executed successfully")
 
-def get_insert_statement(db_schema, table):
-    logger.info(f"Getting insert query for {db_schema} {table}")
-    path = _REPO_ROOT_PATH.joinpath(f"db/sql/{db_schema}/{db_schema}_{table}_insert.sql")
-    with open(path, encoding="utf-8") as f:
+def get_insert_statement(insert_sql_path):
+    logger.info(f"Getting insert query from {insert_sql_path}")
+    with open(insert_sql_path, encoding="utf-8") as f:
         insert_qry = f.read()
         logger.info(f"Insert query retrieved successfully")
         logger.debug(f"Insert query: {insert_qry}")
         return insert_qry
 
-def insert_row_builder(db_schema, file, table, source_filepath, error_message, traceback_message, meta_insert_timestamp):
-    logger.info(f"Building insert row for {db_schema}.{table}")
+def insert_row_builder(target_table, file, source_filepath, error_message, traceback_message, meta_insert_timestamp):
+    logger.info(f"Building insert row for {target_table}")
 
-    match (db_schema, table):
-        case ("raw", "shipment_status"):
+    match target_table:
+        case "raw.shipment_status":
             return {"payload": Jsonb(file), "event_id": file["event_id"],
                         "event_timestamp": file["event_timestamp"],
                         "event_name": file["event_name"],
                         "meta_insert_timestamp": meta_insert_timestamp,
                         "meta_source_file_path": source_filepath}
-        case ("raw", "shipment_products"):
+        case "raw.shipment_products":
             return {"payload": Jsonb(file), "event_id": file["event_id"],
                         "event_timestamp": file["event_timestamp"],
                         "event_name": file["event_name"],
                         "meta_insert_timestamp": meta_insert_timestamp,
                         "meta_source_file_path": source_filepath}
-        case ("quarantine", "shipment_status"):
+        case "quarantine.shipment_status":
             return {"payload": Jsonb(file), "event_id": file["event_id"],
                         "event_timestamp": file["event_timestamp"],
                         "event_name": file["event_name"],
@@ -173,7 +176,7 @@ def insert_row_builder(db_schema, file, table, source_filepath, error_message, t
                         "traceback_message": traceback_message,
                         "meta_insert_timestamp": meta_insert_timestamp,
                         "meta_source_file_path": source_filepath}
-        case ("quarantine", "shipment_products"):
+        case "quarantine.shipment_products":
             return {"payload": Jsonb(file), "event_id": file["event_id"],
                         "event_timestamp": file["event_timestamp"],
                         "event_name": file["event_name"],
@@ -182,8 +185,8 @@ def insert_row_builder(db_schema, file, table, source_filepath, error_message, t
                         "meta_insert_timestamp": meta_insert_timestamp,
                         "meta_source_file_path": source_filepath}
         case _:
-            logger.error(f"Whatcha talkin' bout Willis? Unknown table: {db_schema}.{table}")
-            raise ValueError(f"Whatcha talkin' bout Willis? Unknown table: {db_schema}.{table}")
+            logger.error(f"Whatcha talkin' bout Willis? Unknown table: {target_table}")
+            raise ValueError(f"Whatcha talkin' bout Willis? Unknown table: {target_table}")
 
 def store_file(filename, source_filepath, target_folder):
     logger.info(f"Moving file {filename} from {source_filepath} to {target_folder}")
@@ -197,9 +200,9 @@ def store_file(filename, source_filepath, target_folder):
     shutil.move(source_filepath, destination_filepath)
     logger.info(f"File {filename} moved successfully to {destination_filepath}")
 
-def rollback_insert(db_schema, table, source_filepath):
-    logger.info(f"Rolling back insert for {db_schema}.{table}")
-    delete_qry = f"DELETE FROM {db_schema}.{table} WHERE meta_source_file_path = :meta_source_file_path"
+def rollback_insert(target_table, source_filepath):
+    logger.info(f"Rolling back insert for {target_table}")
+    delete_qry = f"DELETE FROM {target_table} WHERE meta_source_file_path = :meta_source_file_path"
     engine = get_engine()
     with engine.begin() as conn:
         logger.info(f"Executing delete query")

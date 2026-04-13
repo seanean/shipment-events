@@ -33,10 +33,17 @@ In the readme I think I'll give updates on each phase of the project, but for no
 
 - `Reprocessing`
 - `Dead letter queue`
+- `Programmatic STM implementation`
 
 ### Known weaknesses
 
 - `No concurrency` - currently, I haven't done anything to allow multiple versions of the pipeline to run at the same time. There's some cleanup logic that could impact continuous loading / removing of data. My guess: look at this when piping tons of events in or maybe when I try PySpark?
+
+### To Do
+
+- everything above
+- add typing wherever possible
+- integration tests!
 
 ## How am I developing it?
 
@@ -160,3 +167,21 @@ I don't really like how I'm doing my `insert_row_builder`s. I'll probably think 
 I should probably add some aggregate logging. (ingested x files, archived x, quarantined x, start partition, end partition, etc.)
 
 I'll look into how to implement testing before I go to cleansed probably.
+
+## Day 5 [Phase 2]
+
+### Did 
+
+- reworked yaml x string transforms x functions to centralize / reduce transformations and number of variables going around
+    - i.e. i added *_insert_sql_path instead of creating it by combining strings.
+- gave some thought to the `insert_row_builder` issue: my model also generates STMs (event property->model attribute). Should ingest to reduce duplication of logic.
+    - prereqs: 1. would need to connect (model stm / payload structure) -> (naming in code). 2. need to add raw/quarantine to model.
+    - if possible, then I can generate maybe generate this mapping logic by loading in the model stm csv
+    - naming in code -> need to solve how `file["event_timestamp"]` != `payload.event_timestamp` (or however i'd represent root level event info)
+- more tests! + refactoring to make testing easier/possible.
+
+### Learned
+
+| Topic | Learning |
+| ----- | -------- |
+| Testing | Didn't get much time to work on everything today, but I did spend some time working on more tests. It's becoming clear to me what types of patterns are more conducive to testing and what are not. </br> </br> Working with tmp_path to facilitate tests is cool. I'm at the point now where I think everything needs integration tests so I'll probably dive into that next. | 
