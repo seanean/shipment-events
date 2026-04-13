@@ -4,7 +4,7 @@ import yaml
 import logging
 import json
 from pathlib import Path
-from jsonschema import Draft202012Validator, ValidationError
+from jsonschema import Draft202012Validator, ValidationError, SchemaError
 from db import get_engine
 from sqlalchemy import text
 from datetime import datetime, UTC
@@ -46,7 +46,7 @@ def ingest_raw(data, envt):
                     store_file(filename, pending_filepath, quarantine_folder)
                 except Exception as e:
                     logger.error(f"Error moving file {filename} to quarantine folder: {e}")
-                    rollback_insert('raw', config['quarantine_table'], pending_filepath)
+                    rollback_insert('quarantine', config['quarantine_table'], pending_filepath)
                 continue
 
             # flow for valid data
@@ -92,9 +92,15 @@ def get_schema(schema_path):
 
 def validate_schema(schema):
     logger.info(f"Validating schema")
-    Draft202012Validator.check_schema(schema)
+    try:
+        Draft202012Validator.check_schema(schema)
+        logger.info(f"Schema is valid")
+    except SchemaError as e:
+        logger.error(f"Schema is invalid: {e}")
+        logger.error(f"Schema: {schema}")
+        raise e
     validator = Draft202012Validator(schema)
-    logger.info(f"Schema validation successful")
+    logger.info(f"Schema validator created successfully")
     return validator
 
 def get_file(filepath):
@@ -119,7 +125,7 @@ def validate_file(file, validator):
 
 def insert_to_table(db_schema, file, table, source_filepath, error_message=None, traceback_message=None):
     logger.info(f"Inserting file into {db_schema}.{table}")
-    insert_row = insert_row_builder(db_schema, file, table, source_filepath, error_message, traceback_message)                        
+    insert_row = insert_row_builder(db_schema, file, table, source_filepath, error_message, traceback_message, meta_insert_timestamp=datetime.now(UTC))                        
     logger.info(f"Insert row builder successful")
     logger.debug(f"Insert row: {insert_row}")
 
@@ -143,10 +149,9 @@ def get_insert_statement(db_schema, table):
         logger.debug(f"Insert query: {insert_qry}")
         return insert_qry
 
-def insert_row_builder(db_schema, file, table, source_filepath, error_message, traceback_message):
+def insert_row_builder(db_schema, file, table, source_filepath, error_message, traceback_message, meta_insert_timestamp):
     logger.info(f"Building insert row for {db_schema}.{table}")
 
-    meta_insert_timestamp = datetime.now(UTC)
     match (db_schema, table):
         case ("raw", "shipment_status"):
             return {"payload": Jsonb(file), "event_id": file["event_id"],

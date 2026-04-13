@@ -38,4 +38,4 @@ test:
 	@if [ ! -x ".venv/bin/python" ]; then \
 		echo "Run 'make setup' first."; exit 1; \
 	fi
-	.venv/bin/pytest -v
+	.venv/bin/pytest -vv

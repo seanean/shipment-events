@@ -36,7 +36,7 @@ project-structure/
 - `make resetall` - compose down, remove volume, move files back to LZ/pending
 - `make resetdb` - compose down, remove volume
 - `make resetlz` - move files back to LZ/pending
-
+- `make test` - run unit tests
 ---
 
 ## Version Updates
@@ -49,6 +49,9 @@ What I did:
 - added DDLs + inserts + logic to support quarantining events that fail the schema validation
 - reworked access setup have tables be created by engineering role
 - consolidated some logic that is used by both good and bad events (getting queries, inserting to db, moving files)
+
+Evening Update:
+- Added pytest and some unit tests, many more to go!
 
 
 <h1 align="center">
