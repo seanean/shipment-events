@@ -1,9 +1,12 @@
-from ingest_raw import resolve_config, _REPO_ROOT_PATH, validate_schema, validate_file, insert_row_builder
+from ingest_raw import (resolve_config, _REPO_ROOT_PATH,
+                        validate_schema, validate_file,
+                        insert_row_builder, get_schema)
 from pathlib import Path
 from jsonschema import Draft202012Validator, SchemaError, ValidationError
 import pytest
 from psycopg.types.json import Jsonb
 from datetime import datetime, UTC
+import json
 
 # resolve_config tests
 def test_resolve_config():
@@ -160,3 +163,12 @@ def test_insert_row_builder_raises_valueerror_for_unknown_table():
     }
     with pytest.raises(ValueError):
         insert_row_builder(db_schema, file, table, source_filepath, error_message, traceback_message, meta_insert_timestamp)
+
+
+def test_get_schema_returns_dict(tmp_path):
+    schema_path = tmp_path / "schema.json"
+    schema = {"type": "string"}
+    with open(schema_path, "w") as f:
+        json.dump(schema, f)
+    result = get_schema(schema_path)
+    assert result == schema
