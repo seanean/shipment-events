@@ -29,24 +29,24 @@ def test_resolve_config():
     result = resolve_config(loaded_config)
 
     # type checks
-    assert isinstance(result['lz_pending_path'], Path)
-    assert isinstance(result['lz_archive_path'], Path)
-    assert isinstance(result['lz_quarantine_path'], Path)
-    assert isinstance(result['schema_path'], Path)
-    assert isinstance(result['raw_insert_sql_path'], Path)
-    assert isinstance(result['quarantine_insert_sql_path'], Path)
-    assert isinstance(result['raw_target_table'], str)
-    assert isinstance(result['quarantine_target_table'], str)
+    assert isinstance(result.lz_pending_path, Path)
+    assert isinstance(result.lz_archive_path, Path)
+    assert isinstance(result.lz_quarantine_path, Path)
+    assert isinstance(result.schema_path, Path)
+    assert isinstance(result.raw_insert_sql_path, Path)
+    assert isinstance(result.quarantine_insert_sql_path, Path)
+    assert isinstance(result.raw_target_table, str)
+    assert isinstance(result.quarantine_target_table, str)
     # path checks
-    assert result['lz_pending_path'] == _REPO_ROOT_PATH.joinpath(loaded_config['lz_pending_path']   )
-    assert result['lz_archive_path'] == _REPO_ROOT_PATH.joinpath(loaded_config['lz_archive_path'])
-    assert result['lz_quarantine_path'] == _REPO_ROOT_PATH.joinpath(loaded_config['lz_quarantine_path'])
-    assert result['schema_path'] == _REPO_ROOT_PATH.joinpath(loaded_config['schema_path'])
-    assert result['raw_insert_sql_path'] == _REPO_ROOT_PATH.joinpath(loaded_config['raw_insert_sql_path'])
-    assert result['quarantine_insert_sql_path'] == _REPO_ROOT_PATH.joinpath(loaded_config['quarantine_insert_sql_path'])
+    assert result.lz_pending_path == _REPO_ROOT_PATH.joinpath(loaded_config['lz_pending_path']   )
+    assert result.lz_archive_path == _REPO_ROOT_PATH.joinpath(loaded_config['lz_archive_path'])
+    assert result.lz_quarantine_path == _REPO_ROOT_PATH.joinpath(loaded_config['lz_quarantine_path'])
+    assert result.schema_path == _REPO_ROOT_PATH.joinpath(loaded_config['schema_path'])
+    assert result.raw_insert_sql_path == _REPO_ROOT_PATH.joinpath(loaded_config['raw_insert_sql_path'])
+    assert result.quarantine_insert_sql_path == _REPO_ROOT_PATH.joinpath(loaded_config['quarantine_insert_sql_path'])
     # table checks
-    assert result['raw_target_table'] == f'{loaded_config['raw_db_schema']}.{loaded_config['raw_table']}'
-    assert result['quarantine_target_table'] == f'{loaded_config['quarantine_db_schema']}.{loaded_config['quarantine_table']}'
+    assert result.raw_target_table == f'{loaded_config['raw_db_schema']}.{loaded_config['raw_table']}'
+    assert result.quarantine_target_table == f'{loaded_config['quarantine_db_schema']}.{loaded_config['quarantine_table']}'
 
 # validate_schema tests
 
@@ -152,7 +152,8 @@ def test_insert_row_builder_returns_valid_dict(target_table):
                         "meta_insert_timestamp": meta_insert_timestamp,
                         "meta_source_file_path": source_filepath}
 
-    result = insert_row_builder(target_table, file, source_filepath, error_message, traceback_message, meta_insert_timestamp)
+    result = insert_row_builder(target_table, file, meta_insert_timestamp, 
+                                source_filepath, error_message, traceback_message)
     
     # for each key in expected_result, check if result[key] == expected_result[key]
     for key in expected_result:

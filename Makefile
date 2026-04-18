@@ -5,6 +5,11 @@ setup:
 	.venv/bin/pip install --upgrade pip
 	.venv/bin/pip install -r requirements.txt
 
+setup-dev:
+	python3 -m venv .venv
+	.venv/bin/pip install --upgrade pip
+	.venv/bin/pip install -r requirements-dev.txt
+
 raw: # check if python exists and is executable
 	@if [ ! -x ".venv/bin/python" ]; then \
 		echo "Run 'make setup' first."; exit 1; \
@@ -39,3 +44,6 @@ test:
 		echo "Run 'make setup' first."; exit 1; \
 	fi
 	.venv/bin/pytest -v
+
+mypy:
+	.venv/bin/mypy src/ingest_raw.py

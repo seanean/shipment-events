@@ -10,14 +10,28 @@ from sqlalchemy import text
 from datetime import datetime, UTC
 import traceback
 from psycopg.types.json import Jsonb
+from dataclasses import dataclass
+from typing import Any, Literal
 
 logger = logging.getLogger(__name__)
 
 # shipment-events(parent2) > src(parent1)>ingest_raw.py
 _REPO_ROOT_PATH = Path(__file__).resolve().parent.parent
 
+# data class for resolved config makes typing easier
+@dataclass(frozen=True)
+class ResolvedConfig:
+    lz_pending_path: Path
+    lz_archive_path: Path
+    lz_quarantine_path: Path
+    schema_path: Path
+    raw_insert_sql_path: Path
+    quarantine_insert_sql_path: Path
+    raw_target_table: str
+    quarantine_target_table: str
 
-def ingest_raw(data, envt):
+def ingest_raw(data: Literal["shipment_status", "shipment_products"],
+               envt: Literal["dev"]):
 
     logger.info(f'Ingesting raw for {data} in {envt} environment')
 
@@ -25,10 +39,10 @@ def ingest_raw(data, envt):
     loaded_config = get_config(data, config_path)
     config = resolve_config(loaded_config)
 
-    schema = get_schema(config['schema_path'])
+    schema = get_schema(config.schema_path)
     validator = validate_schema(schema)
 
-    for dirpath, dirnames, filenames in os.walk(config['lz_pending_path']):
+    for dirpath, dirnames, filenames in os.walk(config.lz_pending_path):
         logger.info(f"Processing pending folder: {dirpath}")
         for filename in filenames:
             pending_filepath = os.path.join(dirpath, filename)
@@ -41,52 +55,51 @@ def ingest_raw(data, envt):
                 validate_file(pending_file, validator)
             except ValidationError as e:
                 # flow for invalid data
-                insert_to_table(config['quarantine_insert_sql_path'],config['quarantine_target_table'], pending_file,
+                insert_to_table(config.quarantine_insert_sql_path, config.quarantine_target_table, pending_file,
                                 pending_filepath, str(e), traceback.format_exc())
-                quarantine_folder = os.path.join(config['lz_quarantine_path'], pending_dt_partition)
+                quarantine_folder = os.path.join(config.lz_quarantine_path, pending_dt_partition)
                 try:
                     store_file(filename, pending_filepath, quarantine_folder)
                 except Exception as e:
                     logger.error(f"Error moving file {filename} to quarantine folder: {e}")
-                    rollback_insert(config['quarantine_target_table'], pending_filepath)
+                    rollback_insert(config.quarantine_target_table, pending_filepath)
                 continue
 
             # flow for valid data
-            insert_to_table(config['raw_insert_sql_path'], config['raw_target_table'], pending_file, pending_filepath)
-            archive_folder = os.path.join(config['lz_archive_path'], pending_dt_partition)
+            insert_to_table(config.raw_insert_sql_path, config.raw_target_table, pending_file, pending_filepath)
+            archive_folder = os.path.join(config.lz_archive_path, pending_dt_partition)
             try:
                 store_file(filename, pending_filepath, archive_folder)
             except Exception as e:
                 logger.error(f"Error moving file {filename} to archive folder: {e}")
-                rollback_insert(config['raw_target_table'], pending_filepath)
+                rollback_insert(config.raw_target_table, pending_filepath)
 
-    cleanup_pending_lz(config['lz_pending_path'])
+    cleanup_pending_lz(config.lz_pending_path)
     logger.info(f"Pending folder cleanup successful")
 
-def get_config(data, config_path):
+def get_config(data: str, config_path: Path) -> dict[str, str]:
     logger.info(f"Getting config for {data} from {config_path}")
     with open(config_path) as stream:
-        config = yaml.safe_load(stream)
+        config: dict[str, dict[str, str]] = yaml.safe_load(stream)
         logger.info(f"Config retrieved successfully")
         logger.debug(f"Config for {data}: {config[data]}")
     return config[data]
 
-def resolve_config(loaded_config):
+def resolve_config(loaded_config: dict[str, str]) -> ResolvedConfig:
     logger.info(f"Resolving config for loaded_config")
-    resolved_config = {
-        'lz_pending_path': _REPO_ROOT_PATH.joinpath(loaded_config['lz_pending_path']),
-        'lz_archive_path': _REPO_ROOT_PATH.joinpath(loaded_config['lz_archive_path']),
-        'lz_quarantine_path': _REPO_ROOT_PATH.joinpath(loaded_config['lz_quarantine_path']),
-        'schema_path': _REPO_ROOT_PATH.joinpath(loaded_config['schema_path']),
-        'raw_insert_sql_path': _REPO_ROOT_PATH.joinpath(loaded_config['raw_insert_sql_path']),
-        'quarantine_insert_sql_path': _REPO_ROOT_PATH.joinpath(loaded_config['quarantine_insert_sql_path']),
-        'raw_target_table': f'{loaded_config['raw_db_schema']}.{loaded_config['raw_table']}',
-        'quarantine_target_table': f'{loaded_config['quarantine_db_schema']}.{loaded_config['quarantine_table']}'
+    return ResolvedConfig(
+        lz_pending_path=_REPO_ROOT_PATH / loaded_config['lz_pending_path'],
+        lz_archive_path=_REPO_ROOT_PATH / loaded_config['lz_archive_path'],
+        lz_quarantine_path=_REPO_ROOT_PATH / loaded_config['lz_quarantine_path'],
+        schema_path=_REPO_ROOT_PATH / loaded_config['schema_path'],
+        raw_insert_sql_path=_REPO_ROOT_PATH / loaded_config['raw_insert_sql_path'],
+        quarantine_insert_sql_path=_REPO_ROOT_PATH / loaded_config['quarantine_insert_sql_path'],
+        raw_target_table=f'{loaded_config['raw_db_schema']}.{loaded_config['raw_table']}',
+        quarantine_target_table=f'{loaded_config['quarantine_db_schema']}.{loaded_config['quarantine_table']}',
         # if at some point it's needed, we can also resolve the raw_table and raw_db_schema parameters
-    }
-    return resolved_config
+    )
 
-def get_schema(schema_path):
+def get_schema(schema_path: Path) -> dict[str, Any]:
     logger.info(f"Getting schema from {schema_path}")
     with open(schema_path) as stream:
         schema = json.load(stream)
@@ -94,7 +107,7 @@ def get_schema(schema_path):
         logger.debug(f"Schema: {schema}")
     return schema
 
-def validate_schema(schema):
+def validate_schema(schema: dict[str, Any]) -> Draft202012Validator:
     logger.info(f"Validating schema")
     try:
         Draft202012Validator.check_schema(schema)
@@ -107,7 +120,7 @@ def validate_schema(schema):
     logger.info(f"Schema validator created successfully")
     return validator
 
-def get_file(filepath):
+def get_file(filepath: str) -> dict[str, Any]:
     logger.info(f"Getting file from {filepath}")
     with open(filepath, 'r') as f:
         data = json.load(f)
@@ -115,7 +128,7 @@ def get_file(filepath):
         logger.debug(f"File: {data}")
         return data
 
-def validate_file(file, validator):
+def validate_file(file: dict[str, Any], validator: Draft202012Validator) -> None:
     try:
         logger.info(f"Validating file")
         validator.validate(instance=file)
@@ -127,9 +140,12 @@ def validate_file(file, validator):
         raise e
 
 
-def insert_to_table(insert_sql_path, target_table, file, source_filepath, error_message=None, traceback_message=None):
+def insert_to_table(insert_sql_path: Path, target_table: str, 
+                    file: dict[str, Any], source_filepath: str, error_message: str | None = None, 
+                    traceback_message: str | None = None) -> None:
     logger.info(f"Inserting file into {target_table}")
-    insert_row = insert_row_builder(target_table, file, source_filepath, error_message, traceback_message, datetime.now(UTC))                        
+    insert_row = insert_row_builder(target_table, file, datetime.now(UTC), source_filepath, 
+                                    error_message, traceback_message)                        
     logger.info(f"Insert row builder successful")
     logger.debug(f"Insert row: {insert_row}")
 
@@ -144,7 +160,7 @@ def insert_to_table(insert_sql_path, target_table, file, source_filepath, error_
         conn.execute(text(insert_qry),insert_row,)
         logger.info(f"Insert query executed successfully")
 
-def get_insert_statement(insert_sql_path):
+def get_insert_statement(insert_sql_path: Path) -> str:
     logger.info(f"Getting insert query from {insert_sql_path}")
     with open(insert_sql_path, encoding="utf-8") as f:
         insert_qry = f.read()
@@ -152,7 +168,10 @@ def get_insert_statement(insert_sql_path):
         logger.debug(f"Insert query: {insert_qry}")
         return insert_qry
 
-def insert_row_builder(target_table, file, source_filepath, error_message, traceback_message, meta_insert_timestamp):
+def insert_row_builder(target_table: str, file: dict[str, Any], 
+                       meta_insert_timestamp: datetime,
+                       source_filepath: str, error_message: str | None = None,
+                       traceback_message: str | None = None, ) -> dict[str, Any]:
     logger.info(f"Building insert row for {target_table}")
 
     match target_table:
@@ -188,7 +207,7 @@ def insert_row_builder(target_table, file, source_filepath, error_message, trace
             logger.error(f"Whatcha talkin' bout Willis? Unknown table: {target_table}")
             raise ValueError(f"Whatcha talkin' bout Willis? Unknown table: {target_table}")
 
-def store_file(filename, source_filepath, target_folder):
+def store_file(filename: str, source_filepath: str, target_folder: str) -> None:
     logger.info(f"Moving file {filename} from {source_filepath} to {target_folder}")
     
     if not os.path.exists(target_folder):
@@ -200,7 +219,7 @@ def store_file(filename, source_filepath, target_folder):
     shutil.move(source_filepath, destination_filepath)
     logger.info(f"File {filename} moved successfully to {destination_filepath}")
 
-def rollback_insert(target_table, source_filepath):
+def rollback_insert(target_table: str, source_filepath: str) -> None:
     logger.info(f"Rolling back insert for {target_table}")
     delete_qry = f"DELETE FROM {target_table} WHERE meta_source_file_path = :meta_source_file_path"
     engine = get_engine()
@@ -209,7 +228,7 @@ def rollback_insert(target_table, source_filepath):
         conn.execute(text(delete_qry), {"meta_source_file_path": source_filepath})
         logger.info(f"Delete query executed successfully")
 
-def cleanup_pending_lz(pending_folder):
+def cleanup_pending_lz(pending_folder: Path) -> None:
     logger.info(f"Cleaning up pending folder {pending_folder}")
     for dirpath, dirnames, filenames in os.walk(pending_folder, topdown=False):
         if len(os.listdir(dirpath)) == 0:
@@ -217,7 +236,7 @@ def cleanup_pending_lz(pending_folder):
             os.rmdir(dirpath)
             logger.info(f"Pending folder {dirpath} removed successfully")
 
-def main():
+def main() -> None:
     # to be created later when I want to add __init__.py and trigger via cli with args
     # parser = argparse.ArgumentParser()
     # parser.add_argument("-d", "--data", required=True, choices=["shipment_status", "shipment_products"], help="The data to ingest")
