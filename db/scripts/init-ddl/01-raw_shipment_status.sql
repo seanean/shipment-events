@@ -1,5 +1,5 @@
 CREATE TABLE raw.shipment_status (
-    id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    offset_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     event_id VARCHAR NOT NULL,
     event_timestamp TIMESTAMP NOT NULL,
     event_name VARCHAR NOT NULL,
@@ -8,3 +8,4 @@ CREATE TABLE raw.shipment_status (
     meta_source_file_path VARCHAR NOT NULL
 );
 ALTER TABLE raw.shipment_status OWNER TO shrw;
+CREATE INDEX idx_raw_shipment_status_offset_id ON raw.shipment_status (offset_id);
