@@ -35,6 +35,11 @@ def ingest_raw(data: Literal["shipment_status", "shipment_products"],
 
     logger.info(f'Ingesting raw for {data} in {envt} environment')
 
+    events_processed = 0
+    events_to_raw = 0
+    events_to_quarantine = 0
+    events_rolled_back = 0
+
     config_path = _REPO_ROOT_PATH.joinpath(f"config/{envt}.yaml")
     loaded_config = get_config(data, config_path)
     config = resolve_config(loaded_config)
@@ -50,6 +55,7 @@ def ingest_raw(data: Literal["shipment_status", "shipment_products"],
             logger.info(f"Processing file {pending_filepath}")
 
             pending_file = get_file(pending_filepath)
+            events_processed += 1
 
             try:
                 validate_file(pending_file, validator)
@@ -60,9 +66,11 @@ def ingest_raw(data: Literal["shipment_status", "shipment_products"],
                 quarantine_folder = os.path.join(config.lz_quarantine_path, pending_dt_partition)
                 try:
                     store_file(filename, pending_filepath, quarantine_folder)
+                    events_to_quarantine += 1
                 except Exception as e:
                     logger.error(f"Error moving file {filename} to quarantine folder: {e}")
                     rollback_insert(config.quarantine_target_table, pending_filepath)
+                    events_rolled_back += 1
                 continue
 
             # flow for valid data
@@ -70,9 +78,16 @@ def ingest_raw(data: Literal["shipment_status", "shipment_products"],
             archive_folder = os.path.join(config.lz_archive_path, pending_dt_partition)
             try:
                 store_file(filename, pending_filepath, archive_folder)
+                events_to_raw += 1
             except Exception as e:
                 logger.error(f"Error moving file {filename} to archive folder: {e}")
                 rollback_insert(config.raw_target_table, pending_filepath)
+                events_rolled_back += 1
+    
+    logger.info(f"{data} events processed: {events_processed}")
+    logger.info(f"{data} events to raw: {events_to_raw}")
+    logger.info(f"{data} events to quarantine: {events_to_quarantine}")
+    logger.info(f"{data} events rolled back: {events_rolled_back}")
 
     cleanup_pending_lz(config.lz_pending_path)
     logger.info(f"Pending folder cleanup successful")
