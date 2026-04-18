@@ -12,7 +12,7 @@ import json
 import os
 
 # resolve_config tests
-def test_resolve_config():
+def test_resolve_config() -> None:
     loaded_config = {
         'lz_pending_path': 'landing-zone/pending/shipment_status',
         'lz_archive_path': 'landing-zone/archive/shipment_status',
@@ -50,7 +50,7 @@ def test_resolve_config():
 
 # validate_schema tests
 
-def test_validate_schema_accepts_valid_schema():
+def test_validate_schema_accepts_valid_schema() -> None:
     schema = {
         "type": "object",
         "properties": {
@@ -63,7 +63,7 @@ def test_validate_schema_accepts_valid_schema():
     assert isinstance(validator, Draft202012Validator)
     assert validator.is_valid({"something": "test"})
 
-def test_validate_schema_rejects_invalid_schema():
+def test_validate_schema_rejects_invalid_schema() -> None:
     schema = {
         "type": 123
     }
@@ -72,7 +72,7 @@ def test_validate_schema_rejects_invalid_schema():
 
 # validate_file tests
 
-def test_validate_file_accepts_valid_file():
+def test_validate_file_accepts_valid_file() -> None:
     schema = {
         "type": "object",
         "properties": {
@@ -88,7 +88,7 @@ def test_validate_file_accepts_valid_file():
     validate_file(file, validator)
 
 
-def test_validate_file_rejects_invalid_file():
+def test_validate_file_rejects_invalid_file() -> None:
     schema = {
         "type": "object",
         "properties": {
@@ -110,7 +110,7 @@ def test_validate_file_rejects_invalid_file():
                         ["raw.shipment_status", "raw.shipment_products",
                         "quarantine.shipment_status", "quarantine.shipment_products"])
 
-def test_insert_row_builder_returns_valid_dict(target_table):
+def test_insert_row_builder_returns_valid_dict(target_table: str) -> None:
     source_filepath = "test.json"
     error_message = "error"
     traceback_message = "traceback"
@@ -162,7 +162,7 @@ def test_insert_row_builder_returns_valid_dict(target_table):
         else:
             assert result[key] == expected_result[key]
 
-def test_insert_row_builder_raises_valueerror_for_unknown_table():
+def test_insert_row_builder_raises_valueerror_for_unknown_table() -> None:
     target_table = "unknown"
     source_filepath = "test.json"
     error_message = "error"
@@ -177,7 +177,7 @@ def test_insert_row_builder_raises_valueerror_for_unknown_table():
         insert_row_builder(target_table, file, source_filepath, error_message, traceback_message, meta_insert_timestamp)
 
 
-def test_get_schema_returns_dict(tmp_path):
+def test_get_schema_returns_dict(tmp_path: Path) -> None:
     schema_path = tmp_path / "schema.json"
     schema = {"type": "string"}
     with open(schema_path, "w") as f:
@@ -186,7 +186,7 @@ def test_get_schema_returns_dict(tmp_path):
     assert result == schema
     assert isinstance(result, dict)
 
-def test_get_file_returns_dict(tmp_path):
+def test_get_file_returns_dict(tmp_path: Path) -> None:
     file_path = tmp_path / "file.json"
     file = {"type": "string"}
     with open(file_path, "w") as f:
@@ -195,7 +195,7 @@ def test_get_file_returns_dict(tmp_path):
     assert result == file
     assert isinstance(result, dict)
 
-def test_get_insert_statement_returns_string(tmp_path):
+def test_get_insert_statement_returns_string(tmp_path: Path) -> None:
     insert_sql_path = tmp_path / "insert.sql"
     insert_sql = "INSERT INTO test (id, name) VALUES (:id, :name)"
     with open(insert_sql_path, "w") as f:
@@ -204,7 +204,7 @@ def test_get_insert_statement_returns_string(tmp_path):
     assert result == insert_sql
     assert isinstance(result, str)
 
-def test_store_file_removes_original_creates_target(tmp_path):
+def test_store_file_removes_original_creates_target(tmp_path: Path) -> None:
     filename = "test.json"
     source_filepath = tmp_path / "test.json"
     target_folder = tmp_path / "target"
@@ -219,7 +219,7 @@ def test_store_file_removes_original_creates_target(tmp_path):
     assert target_filepath.exists()
 
 # next: cleanup_pending_lz
-def test_cleanup_pending_lz_removes_empty_folders(tmp_path):
+def test_cleanup_pending_lz_removes_empty_folders(tmp_path: Path) -> None:
     pending_folder = tmp_path / "pending"
     pending_folder.mkdir()
 
@@ -236,7 +236,7 @@ def test_cleanup_pending_lz_removes_empty_folders(tmp_path):
     assert not empty_child_folder.exists()
     assert non_empty_child_folder.exists()
 
-def test_get_config_returns_dict(tmp_path):
+def test_get_config_returns_dict(tmp_path: Path) -> None  :
     config_path = tmp_path / "config.yaml"
     config = {"event_name": {"stuff": "things"}}
     with open(config_path, "w") as f:
