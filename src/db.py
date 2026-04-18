@@ -1,6 +1,14 @@
 from sqlalchemy import create_engine
 from dotenv import load_dotenv
 import os
+from pathlib import Path
+import logging
+from datetime import datetime
+from psycopg.types.json import Jsonb
+from typing import Any
+
+
+logger = logging.getLogger(__name__)
 
 _engine = None
 # Singleton engine, so you always get the same one
@@ -16,3 +24,50 @@ def get_engine():
         db_url = f'postgresql+psycopg://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}'
         _engine = create_engine(db_url)
     return _engine
+
+def get_insert_statement(insert_sql_path: Path) -> str:
+    logger.info(f"Getting insert query from {insert_sql_path}")
+    with open(insert_sql_path, encoding="utf-8") as f:
+        insert_qry = f.read()
+        logger.info(f"Insert query retrieved successfully")
+        logger.debug(f"Insert query: {insert_qry}")
+        return insert_qry
+
+def insert_row_builder(target_table: str, content: dict[str, Any], 
+                       meta_insert_timestamp: datetime,
+                       source_filepath: str, error_message: str | None = None,
+                       traceback_message: str | None = None, ) -> dict[str, Any]:
+    logger.info(f"Building insert row for {target_table}")
+
+    match target_table:
+        case "raw.shipment_status":
+            return {"payload": Jsonb(content), "event_id": content["event_id"],
+                        "event_timestamp": content["event_timestamp"],
+                        "event_name": content["event_name"],
+                        "meta_insert_timestamp": meta_insert_timestamp,
+                        "meta_source_file_path": source_filepath}
+        case "raw.shipment_products":
+            return {"payload": Jsonb(content), "event_id": content["event_id"],
+                        "event_timestamp": content["event_timestamp"],
+                        "event_name": content["event_name"],
+                        "meta_insert_timestamp": meta_insert_timestamp,
+                        "meta_source_file_path": source_filepath}
+        case "quarantine.shipment_status":
+            return {"payload": Jsonb(content), "event_id": content["event_id"],
+                        "event_timestamp": content["event_timestamp"],
+                        "event_name": content["event_name"],
+                        "error_message": error_message,
+                        "traceback_message": traceback_message,
+                        "meta_insert_timestamp": meta_insert_timestamp,
+                        "meta_source_file_path": source_filepath}
+        case "quarantine.shipment_products":
+            return {"payload": Jsonb(content), "event_id": content["event_id"],
+                        "event_timestamp": content["event_timestamp"],
+                        "event_name": content["event_name"],
+                        "error_message": error_message,
+                        "traceback_message": traceback_message,
+                        "meta_insert_timestamp": meta_insert_timestamp,
+                        "meta_source_file_path": source_filepath}
+        case _:
+            logger.error(f"Whatcha talkin' bout Willis? Unknown table: {target_table}")
+            raise ValueError(f"Whatcha talkin' bout Willis? Unknown table: {target_table}")

@@ -1,35 +1,19 @@
 import os
 import shutil
-import yaml
 import logging
 from app_logger import configure_logger
 import json
 from pathlib import Path
 from jsonschema import Draft202012Validator, ValidationError, SchemaError
-from db import get_engine
+from db import get_engine, get_insert_statement, insert_row_builder
 from sqlalchemy import text
 from datetime import datetime, UTC
 import traceback
-from psycopg.types.json import Jsonb
-from dataclasses import dataclass
 from typing import Any, Literal
+from config_util import get_config, resolve_config, _REPO_ROOT_PATH
 
 logger = logging.getLogger(__name__)
 
-# shipment-events(parent2) > src(parent1)>ingest_raw.py
-_REPO_ROOT_PATH = Path(__file__).resolve().parent.parent
-
-# data class for resolved config makes typing easier
-@dataclass(frozen=True)
-class ResolvedConfig:
-    lz_pending_path: Path
-    lz_archive_path: Path
-    lz_quarantine_path: Path
-    schema_path: Path
-    raw_insert_sql_path: Path
-    quarantine_insert_sql_path: Path
-    raw_target_table: str
-    quarantine_target_table: str
 
 def ingest_raw(data: Literal["shipment_status", "shipment_products"],
                envt: Literal["dev"]):
@@ -93,28 +77,6 @@ def ingest_raw(data: Literal["shipment_status", "shipment_products"],
     cleanup_pending_lz(config.lz_pending_path)
     logger.info(f"Pending folder cleanup successful")
 
-def get_config(data: str, config_path: Path) -> dict[str, str]:
-    logger.info(f"Getting config for {data} from {config_path}")
-    with open(config_path) as stream:
-        config: dict[str, dict[str, str]] = yaml.safe_load(stream)
-        logger.info(f"Config retrieved successfully")
-        logger.debug(f"Config for {data}: {config[data]}")
-    return config[data]
-
-def resolve_config(loaded_config: dict[str, str]) -> ResolvedConfig:
-    logger.info(f"Resolving config for loaded_config")
-    return ResolvedConfig(
-        lz_pending_path=_REPO_ROOT_PATH / loaded_config['lz_pending_path'],
-        lz_archive_path=_REPO_ROOT_PATH / loaded_config['lz_archive_path'],
-        lz_quarantine_path=_REPO_ROOT_PATH / loaded_config['lz_quarantine_path'],
-        schema_path=_REPO_ROOT_PATH / loaded_config['schema_path'],
-        raw_insert_sql_path=_REPO_ROOT_PATH / loaded_config['raw_insert_sql_path'],
-        quarantine_insert_sql_path=_REPO_ROOT_PATH / loaded_config['quarantine_insert_sql_path'],
-        raw_target_table=f'{loaded_config['raw_db_schema']}.{loaded_config['raw_table']}',
-        quarantine_target_table=f'{loaded_config['quarantine_db_schema']}.{loaded_config['quarantine_table']}',
-        # if at some point it's needed, we can also resolve the raw_table and raw_db_schema parameters
-    )
-
 def get_schema(schema_path: Path) -> dict[str, Any]:
     logger.info(f"Getting schema from {schema_path}")
     with open(schema_path) as stream:
@@ -175,53 +137,6 @@ def insert_to_table(insert_sql_path: Path, target_table: str,
         logger.info(f"Executing insert query")
         conn.execute(text(insert_qry),insert_row,)
         logger.info(f"Insert query executed successfully")
-
-def get_insert_statement(insert_sql_path: Path) -> str:
-    logger.info(f"Getting insert query from {insert_sql_path}")
-    with open(insert_sql_path, encoding="utf-8") as f:
-        insert_qry = f.read()
-        logger.info(f"Insert query retrieved successfully")
-        logger.debug(f"Insert query: {insert_qry}")
-        return insert_qry
-
-def insert_row_builder(target_table: str, file: dict[str, Any], 
-                       meta_insert_timestamp: datetime,
-                       source_filepath: str, error_message: str | None = None,
-                       traceback_message: str | None = None, ) -> dict[str, Any]:
-    logger.info(f"Building insert row for {target_table}")
-
-    match target_table:
-        case "raw.shipment_status":
-            return {"payload": Jsonb(file), "event_id": file["event_id"],
-                        "event_timestamp": file["event_timestamp"],
-                        "event_name": file["event_name"],
-                        "meta_insert_timestamp": meta_insert_timestamp,
-                        "meta_source_file_path": source_filepath}
-        case "raw.shipment_products":
-            return {"payload": Jsonb(file), "event_id": file["event_id"],
-                        "event_timestamp": file["event_timestamp"],
-                        "event_name": file["event_name"],
-                        "meta_insert_timestamp": meta_insert_timestamp,
-                        "meta_source_file_path": source_filepath}
-        case "quarantine.shipment_status":
-            return {"payload": Jsonb(file), "event_id": file["event_id"],
-                        "event_timestamp": file["event_timestamp"],
-                        "event_name": file["event_name"],
-                        "error_message": error_message,
-                        "traceback_message": traceback_message,
-                        "meta_insert_timestamp": meta_insert_timestamp,
-                        "meta_source_file_path": source_filepath}
-        case "quarantine.shipment_products":
-            return {"payload": Jsonb(file), "event_id": file["event_id"],
-                        "event_timestamp": file["event_timestamp"],
-                        "event_name": file["event_name"],
-                        "error_message": error_message,
-                        "traceback_message": traceback_message,
-                        "meta_insert_timestamp": meta_insert_timestamp,
-                        "meta_source_file_path": source_filepath}
-        case _:
-            logger.error(f"Whatcha talkin' bout Willis? Unknown table: {target_table}")
-            raise ValueError(f"Whatcha talkin' bout Willis? Unknown table: {target_table}")
 
 def store_file(filename: str, source_filepath: str, target_folder: str) -> None:
     logger.info(f"Moving file {filename} from {source_filepath} to {target_folder}")
