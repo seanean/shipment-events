@@ -68,7 +68,7 @@ def ingest_raw(data: Literal["shipment_status", "shipment_products"],
                     store_file(filename, pending_filepath, quarantine_folder)
                     events_to_quarantine += 1
                 except Exception as e:
-                    logger.error(f"Error moving file {filename} to quarantine folder: {e}")
+                    logger.error(f"Error moving file {filename} to quarantine folder: {e}", exc_info=True)
                     rollback_insert(config.quarantine_target_table, pending_filepath)
                     events_rolled_back += 1
                 continue
@@ -80,7 +80,7 @@ def ingest_raw(data: Literal["shipment_status", "shipment_products"],
                 store_file(filename, pending_filepath, archive_folder)
                 events_to_raw += 1
             except Exception as e:
-                logger.error(f"Error moving file {filename} to archive folder: {e}")
+                logger.error(f"Error moving file {filename} to archive folder: {e}", exc_info=True)
                 rollback_insert(config.raw_target_table, pending_filepath)
                 events_rolled_back += 1
     
@@ -128,7 +128,7 @@ def validate_schema(schema: dict[str, Any]) -> Draft202012Validator:
         Draft202012Validator.check_schema(schema)
         logger.info(f"Schema is valid")
     except SchemaError as e:
-        logger.error(f"Schema is invalid: {e}")
+        logger.error(f"Schema is invalid: {e}", exc_info=True)
         logger.error(f"Schema: {schema}")
         raise e
     validator = Draft202012Validator(schema)
@@ -150,7 +150,7 @@ def validate_file(file: dict[str, Any], validator: Draft202012Validator) -> None
         logger.info(f"File is valid")
         logger.debug(f"File: {file}")
     except ValidationError as e:
-        logger.error(f"File is invalid: {e}")
+        logger.error(f"File is invalid: {e}", exc_info=True)
         logger.error(f"File: {file}")
         raise e
 

@@ -1,9 +1,8 @@
 import logging
 import sys
-# from datetime import datetime
+import time
 
 ###########################Logging Setup###########################
-
 
 def configure_logger() -> logging.Logger:
     # init root logger
@@ -11,14 +10,16 @@ def configure_logger() -> logging.Logger:
     logging_level = logging.INFO
 
     if not logger.handlers:
+        fmt = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(funcName)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S UTC')
+        fmt.converter = time.gmtime
         # create fileHandler for logging to send data to file
         #file_handler = logging.FileHandler(datetime.now().strftime('%Y-%m-%d_%H-%M_madalier.log'))
         #file_handler.encoding = 'utf-8'
-        #file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(name)s %(funcName)s %(message)s'))
+        #file_handler.setFormatter(fmt)
 
         # create streamHandler to send to terminal
         stream_handler = logging.StreamHandler(sys.stdout)
-        stream_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s %(name)s %(funcName)s %(message)s'))
+        stream_handler.setFormatter(fmt)
 
         # add handlers to the logger
         logger.addHandler(stream_handler)
