@@ -4,3 +4,5 @@ __pycache__
 db/model/temp/*
 learnings/*
 .cursor
+.mypy_cache
+.pytest_cache

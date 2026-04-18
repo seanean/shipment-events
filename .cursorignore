@@ -3,3 +3,5 @@
 __pycache__
 db/model/temp/*
 learnings/notes/*
+.mypy_cache
+.pytest_cache
