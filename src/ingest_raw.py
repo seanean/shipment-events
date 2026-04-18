@@ -2,6 +2,7 @@ import os
 import shutil
 import yaml
 import logging
+from app_logger import configure_logger
 import json
 from pathlib import Path
 from jsonschema import Draft202012Validator, ValidationError, SchemaError
@@ -259,6 +260,9 @@ def main() -> None:
     # args = parser.parse_args()
     # ingest_raw(args.data, args.environment)
     print('hello world :)')
+    ingest_raw('shipment_status', 'dev')
+    ingest_raw('shipment_products', 'dev')
 
 if __name__ == "__main__":
+    logger = configure_logger()
     main()

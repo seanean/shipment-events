@@ -14,7 +14,13 @@ raw: # check if python exists and is executable
 	@if [ ! -x ".venv/bin/python" ]; then \
 		echo "Run 'make setup' first."; exit 1; \
 	fi
-	.venv/bin/python src/main.py
+	.venv/bin/python src/ingest_raw.py
+
+cleanse: # check if python exists and is executable
+	@if [ ! -x ".venv/bin/python" ]; then \
+		echo "Run 'make setup' first."; exit 1; \
+	fi
+	.venv/bin/python src/cleanse.py
 
 composeup:
 	docker compose up -d --wait
