@@ -5,8 +5,8 @@ CREATE TABLE cur.shipment_product (
     product_qty INTEGER NOT NULL,
     meta_source_event_ids VARCHAR,
     meta_source_event_names VARCHAR,
-    meta_insert_timestamp TIMESTAMP,
-    meta_updated_timestamp TIMESTAMP,
+    meta_insert_timestamp TIMESTAMPTZ,
+    meta_updated_timestamp TIMESTAMPTZ,
     PRIMARY KEY (shipment_product_uuid)
 );
 ALTER TABLE cur.shipment_product OWNER TO shrw;
