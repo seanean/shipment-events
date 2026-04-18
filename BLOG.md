@@ -59,7 +59,7 @@ How I am using AI:
 
 ---
 
-## Phase 1
+## Phase 1 - Setup & Raw
 
 ### Did
 
@@ -105,7 +105,7 @@ How I am using AI:
 |Avoiding multiple raw loads|I considered different approaches: 1) moving files after processing. 2) maintaining a log of files which were processed. 3) relying on unique inserts to avoid double loading. 4). trying to replicate databricks checkpoint logic. 5) tracking processed partitions. </br> </br> what I landed on was option 1) as it seems quite simple, and I think for reprocessing we can just add logic to load from the archive folder rather than the pending folder (to avoid having to move files back).|
 
 
-## Phase 2
+## Phase 2 - Quarantine, Testing, Typing
 
 ### Did
 
@@ -153,7 +153,7 @@ Things I wanted/want to do before cleansed:
 - ✓ testing (mostly done, won't go to integration testing in this phase)
 - ✓ typing
 - ✓ quarantining
-- aggregate logging
+- ✓ aggregate logging
 
 I don't really like how I'm doing my `insert_row_builder`s. I'll probably think of another way to do it eventually. some thoughts on that:
 - my model also generates STMs (event property->model attribute). Should ingest to reduce duplication of logic.
@@ -176,3 +176,40 @@ Experimenting with caveman mode to see if I can use less tokens and learn faster
 |rsync instead of mv| mv doesn't work well if there are files existing in the folder we're copying to. in the makefile I have make resetall / make resetlz which moves stuff from the archive back to the landing-zone. I swapped it out with rsync + rm -rf to allow for merging of archive back to the LZ. this does mean that if the same filename is in archive and in LZ, the LZ would be overwritten. This is more of a dev tool so for me that's fine. |
 | compose up --wait | beautiful, I can use my health check to know when things are good to go. (I kept hitting errors by `make raw`ing too soon.) |
 |bash|I get why there's a running joke about everything being based on a bash script and a cron job. Seems like such a flexible tool. Happy with the reworked init.|
+
+## Phase 3 - Cleansed
+
+### Some Thoughts
+Things I'd like to do in cleansed:
+- Incrementally retrieve/process/load data
+    - pipeline history table
+    - batch retrieval based on offset_id
+    - cleansing in python
+    - merging within batch in python (prevent double keys in sql insert)
+    - batch insert (incl. merge) via executemany
+    - handle empty runs
+    - log aggregates
+- ✓ Update raw DDLs (add indexes for batching)
+- ✓ Create cleansed DDLs (w/ event id index)
+- ✓ Create pipeline history DDL
+- Merge on event ID
+- Generate UUIDs
+- Cast to data types
+- Drop unneeded fields
+- Add default values
+- Log aggregates
+
+Researched:
+- how do I handle merging with incremental stuff?
+- how do I not have to load everything in memory?
+
+### Learned
+
+
+| Topic | Learning |
+| --- | --- |
+| Incremental Processing - detecting progress | A couple of ways to do this. 1. `storing progress on raw` - this would mean having a `processed_at` field on raw table. I don't like this because it means altering raw records a lot.  |
+| Incremental Processing - detecting progress |2. `pipeline state table` - something like 'latest from raw.t1 is yesterday'. I like this. |
+| Fetch Strategy | 1. a [`server-side cursor`](https://www.postgresql.org/docs/current/plpgsql-cursors.html) - `Rather than executing a whole query at once, it is possible to set up a cursor that encapsulates the query, and then read the query result a few rows at a time. One reason for doing this is to avoid memory overrun when the result contains a large number of rows.` It makes sense, but there are details about behavior of the connection / transaction that I'd have to figure out. Might prefer option 2.|
+| Fetch Strategy | 2. `batch querying` - linked to pipeline state. Can batch by a date or by a row ID. can fine-tune batching to the size of the data which is nice (wide table 5 rows, narrow table 50 rows).  |
+| Event merging | To some degree you can rely on Postgres' merge on key logic. However, if you're going to bulk insert (like I will be) you'll need to avoid that a single batch contains >1 of the same event ID. Strategy will be a combination of both: merge in batch in Pandas, merge in table in DB. </br> </br> Another alternative could be to have a post-cleansing staging table that has everything, then I select a `distinct on event ID order by event timestamp desc` into the actual cleansing table. |
