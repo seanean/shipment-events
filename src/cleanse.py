@@ -11,7 +11,7 @@ from datetime import datetime, UTC
 import traceback
 # from psycopg.types.json import Jsonb
 # from dataclasses import dataclass
-from typing import Any, Literal
+from typing import Any, Literal, cast
 import pandas as pd
 # only required if running cleanse.py directly:
 from app_logger import configure_logger
@@ -27,8 +27,16 @@ _ROOT_NAMESPACE = uuid5(NAMESPACE_DNS, 'shipment-events')
 def cleanse(data: Literal["shipment_status", "shipment_products"],
                     envt: Literal["dev"]) -> None:
     logger.info(f'Running cleansed for {data} in {envt} environment')
+    
+    # initializing variables
     run_started_at = datetime.now(UTC)
     job_name = f'cleanse_{data}_{envt}'
+    config_path = _REPO_ROOT_PATH.joinpath(f"config/{envt}.yaml")
+    batch_id = 1
+
+    # preparing config
+    loaded_config = get_config(data, config_path)
+    config = resolve_config(loaded_config)
 
     try:
         latest_raw_offset_id = get_latest_raw_offset_id(job_name)
@@ -48,62 +56,78 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
         # TODO: maybe raise e and handle in main?
         raise e
 
-    batch_df = get_raw_batch(data, envt, latest_raw_offset_id, _BATCH_SIZE)
-    if batch_df.empty:
-        logger.info(f'Batch is empty, exiting')
-        insert_pipeline_batch_run(run_id=run_id, batch_id=1, job_name=job_name, status='success', started_at=run_started_at,
-                                from_id_exclusive=latest_raw_offset_id, to_id_inclusive=latest_raw_offset_id,
-                                rows_read=0, rows_written=0, error_message=None, traceback_message=None)
-        return
-    rows_read = batch_df.shape[0]
+    from_id_exclusive = latest_raw_offset_id
+    # run until batches don't return anything else.
+    while True:
+        batch_df = get_raw_batch(data, envt, from_id_exclusive, _BATCH_SIZE)
+        if batch_df.empty:
+            logger.info(f'Batch is empty, exiting')
+            insert_pipeline_batch_run(run_id=run_id, batch_id=1, job_name=job_name, status='success', started_at=run_started_at,
+                                    starting_from_id_exclusive=latest_raw_offset_id,
+                                    from_id_exclusive=from_id_exclusive, to_id_inclusive=from_id_exclusive,
+                                    rows_read=0, rows_written=0, error_message=None, traceback_message=None)
+            break
+        rows_read = batch_df.shape[0]
 
-    config_path = _REPO_ROOT_PATH.joinpath(f"config/{envt}.yaml")
-    loaded_config = get_config(data, config_path)
-    config = resolve_config(loaded_config)
-    insert_qry = get_insert_statement(config.cln_insert_sql_path)
+        # get latest per event ID. alternative approach would be based on event timestamp
+        batch_df_merged: pd.DataFrame = batch_df.loc[batch_df["offset_id"].isin(batch_df.groupby("event_id")["offset_id"].max())]
+        to_id_inclusive = batch_df_merged["offset_id"].max()
 
-    batch_df_merged: pd.DataFrame = batch_df.loc[batch_df["offset_id"].isin(batch_df.groupby("event_id")["offset_id"].max())]
-    to_id_inclusive = batch_df_merged["offset_id"].max()
+        # converting to dict because df.apply is not vectorized and list comprehensions should be faster
+        batch_dict_list = batch_df_merged.to_dict(orient="records")
+
+        # cleanse logic
+        for row in batch_dict_list:
+            row['payload_cln'] = add_uuids(row['payload'], data)
+
+        # prepare cln insert
+        insert_qry = get_insert_statement(config.cln_insert_sql_path)
+        insert_rows = [
+            insert_row_builder(
+                target_table=config.cln_target_table,
+                content=cast(dict[str, Any], row),
+                meta_insert_timestamp=datetime.now(UTC),
+                meta_source_filepath=row["meta_source_file_path"],
+            )
+            for row in batch_dict_list
+        ]
     
+        engine = get_engine()
 
-    # converting to dict because df.apply is not vectorized and list comprehensions should be faster
-    batch_dict_list = batch_df_merged.to_dict(orient="records")
-
-    for row in batch_dict_list:
-        row['payload_cln'] = add_uuids(row['payload'], data)
-
-    insert_rows = [insert_row_builder(config.cln_target_table, row, datetime.now(UTC), row["meta_source_file_path"]) for row in batch_dict_list]
-
-    engine = get_engine()
-    try:
-        with engine.begin() as conn:
-            logger.info(f"Executing insert query")
-            result = conn.execute(text(insert_qry),insert_rows,)
-            rows_written = result.rowcount
-            logger.info(f"Insert query executed successfully, {result.rowcount} rows written")
-            
-    except Exception as e:
-        logger.error(f"Error inserting batch: {e}")
+        # do cln insert
         try:
-            insert_pipeline_batch_run(run_id=run_id, batch_id=1, job_name=job_name, status='failed', started_at=run_started_at,
-                                        from_id_exclusive=latest_raw_offset_id, to_id_inclusive=to_id_inclusive,
-                                        rows_read=rows_read, rows_written=0, error_message=str(e), traceback_message=traceback.format_exc())
+            with engine.begin() as conn:
+                logger.info(f"Executing insert query")
+                result = conn.execute(text(insert_qry),insert_rows,)
+                rows_written = result.rowcount
+                logger.info(f"Insert query executed successfully, {result.rowcount} rows written")
+        
+        # if cln insert failed, insert a pipeline run failure
+        except Exception as e:
+            logger.error(f"Error inserting batch: {e}")
+            try:
+                insert_pipeline_batch_run(run_id=run_id, batch_id=batch_id, job_name=job_name, status='failed', started_at=run_started_at,
+                                            starting_from_id_exclusive=latest_raw_offset_id,
+                                            from_id_exclusive=from_id_exclusive, to_id_inclusive=to_id_inclusive,
+                                            rows_read=rows_read, rows_written=0, error_message=str(e), traceback_message=traceback.format_exc())
+            # if that failed too, that's not good
+            except Exception as meta_e:
+                logger.error(f'Error inserting pipeline failed: {meta_e}')
+                raise meta_e
+            raise e
+
+        # after cln insert success, insert a pipeline run success
+        try:
+            insert_pipeline_batch_run(run_id=run_id, batch_id=batch_id, job_name=job_name, status='success', started_at=run_started_at,
+                                        starting_from_id_exclusive=latest_raw_offset_id,
+                                        from_id_exclusive=from_id_exclusive, to_id_inclusive=to_id_inclusive,
+                                        rows_read=rows_read, rows_written=rows_written, error_message=None, traceback_message=None)
         except Exception as meta_e:
-            logger.error(f'Error inserting pipeline failed: {meta_e}')
+            logger.error(f'Error inserting pipeline success: {meta_e}')
             raise meta_e
-        raise e
 
-    try:
-        insert_pipeline_batch_run(run_id=run_id, batch_id=1, job_name=job_name, status='success', started_at=run_started_at,
-                                    from_id_exclusive=latest_raw_offset_id, to_id_inclusive=to_id_inclusive,
-                                    rows_read=rows_read, rows_written=rows_written, error_message=None, traceback_message=None)
-    except Exception as meta_e:
-        logger.error(f'Error inserting pipeline success: {meta_e}')
-        raise meta_e
-
-
-    # while batch:
-    #     batch = get_raw_batch(data, envt, latest_raw_offset_id, _BATCH_SIZE)
+        batch_id +=1
+        from_id_exclusive = to_id_inclusive
 
 
 def get_latest_raw_offset_id(job_name: str) -> int:
@@ -162,7 +186,7 @@ def add_uuids(payload: dict[str, Any], data: str) -> dict[str, Any]:
         case _:
             raise ValueError(f"Invalid data: {data}")
 
-def _build_uuid(*args: str) -> UUID:
+def _build_uuid(*args: str) -> str:
     return str(uuid5(_ROOT_NAMESPACE, ''.join(args)))
 
 def add_shipment_status_uuids(payload_cln: dict[str, Any]) -> dict[str, Any]:
@@ -179,16 +203,16 @@ def add_shipment_products_uuids(payload_cln: dict[str, Any]) -> dict[str, Any]:
 
     return payload_cln
 
-def insert_pipeline_batch_run(run_id: int, batch_id: int, job_name: str, status: str, started_at: datetime,
-                                from_id_exclusive: int, to_id_inclusive: int, rows_read: int, rows_written: int, error_message: str, traceback_message: str):
-    insert_qry = """INSERT INTO meta.pipeline_run (run_id, batch_id, job_name, status, started_at, finished_at, 
+def insert_pipeline_batch_run(run_id: int, batch_id: int, job_name: str, status: str, started_at: datetime, starting_from_id_exclusive: int,
+                                from_id_exclusive: int, to_id_inclusive: int, rows_read: int, rows_written: int, error_message: str | None, traceback_message: str | None):
+    insert_qry = """INSERT INTO meta.pipeline_run (run_id, batch_id, job_name, status, started_at, finished_at, starting_from_id_exclusive,
                     from_id_exclusive, to_id_inclusive, rows_read, rows_written, error_message, traceback_message)
-                    VALUES (:run_id, :batch_id, :job_name, :status, :started_at, NOW(),
+                    VALUES (:run_id, :batch_id, :job_name, :status, :started_at, NOW(), :starting_from_id_exclusive,
                             :from_id_exclusive, :to_id_inclusive, :rows_read, :rows_written, :error_message, :traceback_message)"""
     engine = get_engine()
     with engine.begin() as conn:
         conn.execute(text(insert_qry), {"run_id": run_id, "batch_id": batch_id, "job_name": job_name, "status": status, "started_at": started_at, 
-                                        "from_id_exclusive": from_id_exclusive, "to_id_inclusive": to_id_inclusive, 
+                                        "starting_from_id_exclusive": starting_from_id_exclusive, "from_id_exclusive": from_id_exclusive, "to_id_inclusive": to_id_inclusive, 
                                         "rows_read": rows_read, "rows_written": rows_written, "error_message": error_message, "traceback_message": traceback_message})
 
 def main() -> None:

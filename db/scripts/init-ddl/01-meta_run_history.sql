@@ -6,6 +6,7 @@ CREATE TABLE meta.pipeline_run (
     status TEXT NOT NULL CHECK (status IN ('success', 'failed')),
     started_at TIMESTAMPTZ NOT NULL,
     finished_at TIMESTAMPTZ NOT NULL,
+    starting_from_id_exclusive BIGINT NOT NULL,
     from_id_exclusive BIGINT NOT NULL,
     to_id_inclusive BIGINT,
     rows_read BIGINT,
