@@ -51,5 +51,8 @@ test:
 	fi
 	.venv/bin/pytest -v
 
-mypy:
+mypy-raw:
 	.venv/bin/mypy src/ingest_raw.py
+
+mypy-cleanse:
+	.venv/bin/mypy src/cleanse.py
