@@ -79,7 +79,7 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
     # start getting batches. go until a batch is empty
     params.from_id_exclusive = params.latest_raw_offset_id
     while True:
-        batch_df, params.rows_read = get_raw_batch(data, envt, params.from_id_exclusive, _BATCH_SIZE)
+        batch_df, params.rows_read = get_raw_batch(config.raw_target_table, envt, params.from_id_exclusive, _BATCH_SIZE)
         if batch_df.empty:
             logger.info(f'Batch is empty, exiting')
             params.status = 'success'
@@ -176,9 +176,9 @@ def get_latest_run_id(envt: str) -> int:
         logger.error(f"Error getting latest run id: {e}")
         raise e
 
-def get_raw_batch(data: str, envt: str, offset_id: int, batch_size: int) -> Tuple[pd.DataFrame, int]:
-    logger.info(f"Getting raw batch for {data} in {envt} environment from {offset_id} to {offset_id + batch_size}")
-    batch_qry = f'SELECT * FROM raw.{data} WHERE offset_id > :offset_id LIMIT :batch_size'
+def get_raw_batch(target_table: str, envt: str, offset_id: int, batch_size: int) -> Tuple[pd.DataFrame, int]:
+    logger.info(f"Getting raw batch from {target_table} in {envt} environment from {offset_id} to {offset_id + batch_size}")
+    batch_qry = f'SELECT * FROM {target_table} WHERE offset_id > :offset_id LIMIT :batch_size'
     engine = get_engine()
     try:
         with engine.begin() as conn:
