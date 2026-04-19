@@ -39,22 +39,29 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
     config = resolve_config(loaded_config)
 
     try:
-        latest_raw_offset_id = get_latest_raw_offset_id(job_name)
-        logger.info(f"Latest raw offset id: {latest_raw_offset_id}")
-    except Exception as e:
-        logger.error(f"Error getting latest raw offset id: {e}. {traceback.format_exc()}")
-        # TODO: insert failed pipeline run
-        # TODO: maybe raise e and handle in main?
-        raise e
-    
-    try:
         latest_run_id = get_latest_run_id(envt)
         run_id = latest_run_id + 1
         logger.info(f"Latest run ID: {latest_run_id}, current run ID: {run_id}")
     except Exception as e:
         logger.error(f"Error getting latest run id: {e}")
-        # TODO: maybe raise e and handle in main?
         raise e
+
+    try:
+        latest_raw_offset_id = get_latest_raw_offset_id(job_name)
+        logger.info(f"Latest raw offset id: {latest_raw_offset_id}")
+    except Exception as e:
+        logger.error(f"Error getting latest raw offset id: {e}. {traceback.format_exc()}")
+        try:
+            insert_pipeline_batch_run(run_id=run_id, batch_id=batch_id, job_name=job_name, status='failed', started_at=run_started_at,
+                                            starting_from_id_exclusive=0,
+                                            from_id_exclusive=0, to_id_inclusive=0,
+                                            rows_read=0, rows_written=0, error_message=str(e), traceback_message=traceback.format_exc())
+        except Exception as meta_e:
+            logger.error(f'Error inserting pipeline failed: {meta_e}')
+            raise meta_e
+        raise e
+    
+
 
     from_id_exclusive = latest_raw_offset_id
     # run until batches don't return anything else.
