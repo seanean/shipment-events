@@ -5,68 +5,110 @@ import logging
 # import json
 # from pathlib import Path
 # from jsonschema import Draft202012Validator, ValidationError, SchemaError
-from db import get_engine
+from db import get_engine, get_insert_statement, insert_row_builder
 from sqlalchemy import text
-# from datetime import datetime, UTC
-# import traceback
+from datetime import datetime, UTC
+import traceback
 # from psycopg.types.json import Jsonb
 # from dataclasses import dataclass
 from typing import Any, Literal
 import pandas as pd
 # only required if running cleanse.py directly:
 from app_logger import configure_logger
-
+from uuid import uuid5, NAMESPACE_DNS, UUID
+from copy import deepcopy
+from config_util import get_config, resolve_config, _REPO_ROOT_PATH
 logger = logging.getLogger(__name__)
 
-_BATCH_SIZE = 3 # 200
+_BATCH_SIZE = 1 # 200
+_ROOT_NAMESPACE = uuid5(NAMESPACE_DNS, 'shipment-events')
+
 
 def cleanse(data: Literal["shipment_status", "shipment_products"],
                     envt: Literal["dev"]) -> None:
     logger.info(f'Running cleansed for {data} in {envt} environment')
+    run_started_at = datetime.now(UTC)
+    job_name = f'cleanse_{data}_{envt}'
 
     try:
-        latest_raw_offset_id = get_latest_raw_offset_id(data, envt)
+        latest_raw_offset_id = get_latest_raw_offset_id(job_name)
         logger.info(f"Latest raw offset id: {latest_raw_offset_id}")
     except Exception as e:
-        logger.error(f"Error getting latest raw offset id: {e}", exc_info=True)
+        logger.error(f"Error getting latest raw offset id: {e}. {traceback.format_exc()}")
         # TODO: insert failed pipeline run
+        # TODO: maybe raise e and handle in main?
+        raise e
+    
+    try:
+        latest_run_id = get_latest_run_id(envt)
+        run_id = latest_run_id + 1
+        logger.info(f"Latest run ID: {latest_run_id}, current run ID: {run_id}")
+    except Exception as e:
+        logger.error(f"Error getting latest run id: {e}")
         # TODO: maybe raise e and handle in main?
         raise e
 
     batch_df = get_raw_batch(data, envt, latest_raw_offset_id, _BATCH_SIZE)
     if batch_df.empty:
         logger.info(f'Batch is empty, exiting')
-        # todo: insert success with no rows + same offset
+        insert_pipeline_batch_run(run_id=run_id, batch_id=1, job_name=job_name, status='success', started_at=run_started_at,
+                                from_id_exclusive=latest_raw_offset_id, to_id_inclusive=latest_raw_offset_id,
+                                rows_read=0, rows_written=0, error_message=None, traceback_message=None)
         return
-    logger.info(batch_df)
+    rows_read = batch_df.shape[0]
 
-    batch_df_merged = batch_df.loc[batch_df["offset_id"].isin(batch_df.groupby("event_id")["offset_id"].max())]
+    config_path = _REPO_ROOT_PATH.joinpath(f"config/{envt}.yaml")
+    loaded_config = get_config(data, config_path)
+    config = resolve_config(loaded_config)
+    insert_qry = get_insert_statement(config.cln_insert_sql_path)
 
-    logger.info(batch_df_merged)
-    # merge
-    # uuids
-    # insert cln
-    # insert run
+    batch_df_merged: pd.DataFrame = batch_df.loc[batch_df["offset_id"].isin(batch_df.groupby("event_id")["offset_id"].max())]
+    to_id_inclusive = batch_df_merged["offset_id"].max()
+    
+
+    # converting to dict because df.apply is not vectorized and list comprehensions should be faster
+    batch_dict_list = batch_df_merged.to_dict(orient="records")
+
+    for row in batch_dict_list:
+        row['payload_cln'] = add_uuids(row['payload'], data)
+
+    insert_rows = [insert_row_builder(config.cln_target_table, row, datetime.now(UTC), row["meta_source_file_path"]) for row in batch_dict_list]
+
+    engine = get_engine()
+    try:
+        with engine.begin() as conn:
+            logger.info(f"Executing insert query")
+            result = conn.execute(text(insert_qry),insert_rows,)
+            rows_written = result.rowcount
+            logger.info(f"Insert query executed successfully, {result.rowcount} rows written")
+            
+    except Exception as e:
+        logger.error(f"Error inserting batch: {e}")
+        try:
+            insert_pipeline_batch_run(run_id=run_id, batch_id=1, job_name=job_name, status='failed', started_at=run_started_at,
+                                        from_id_exclusive=latest_raw_offset_id, to_id_inclusive=to_id_inclusive,
+                                        rows_read=rows_read, rows_written=0, error_message=str(e), traceback_message=traceback.format_exc())
+        except Exception as meta_e:
+            logger.error(f'Error inserting pipeline failed: {meta_e}')
+            raise meta_e
+        raise e
+
+    try:
+        insert_pipeline_batch_run(run_id=run_id, batch_id=1, job_name=job_name, status='success', started_at=run_started_at,
+                                    from_id_exclusive=latest_raw_offset_id, to_id_inclusive=to_id_inclusive,
+                                    rows_read=rows_read, rows_written=rows_written, error_message=None, traceback_message=None)
+    except Exception as meta_e:
+        logger.error(f'Error inserting pipeline success: {meta_e}')
+        raise meta_e
 
 
     # while batch:
     #     batch = get_raw_batch(data, envt, latest_raw_offset_id, _BATCH_SIZE)
 
 
-    # get raw data from offset_id to latest or offset + _BATCH_SIZE
-    # merge raw on event id
-    # generate uuids
-    # insert into cleansed
-    # insert batch success
-    # insert pipeline run success
-    # insert pipeline run failure
-    # handle empty batch
-    
-
-def get_latest_raw_offset_id(data: str, envt: str) -> int:
-    logger.info(f"Getting latest raw offset id for {data} in {envt} environment")
+def get_latest_raw_offset_id(job_name: str) -> int:
+    logger.info(f"Getting latest raw offset id for {job_name}")
     offset_qry = f"SELECT MAX(to_id_inclusive) FROM meta.pipeline_run WHERE job_name = :job_name AND status = 'success'"
-    job_name = f'cleanse_{data}_{envt}'
     engine = get_engine()
     try:
         with engine.begin() as conn:
@@ -76,9 +118,23 @@ def get_latest_raw_offset_id(data: str, envt: str) -> int:
             logger.info(f"Latest raw offset id: {latest_offset_id}")
             return latest_offset_id
     except Exception as e:
-        logger.error(f"Error getting latest raw offset id: {e}", exc_info=True)
+        logger.error(f"Error getting latest raw offset id: {e}")
         raise e
 
+def get_latest_run_id(envt: str) -> int:
+    logger.info(f"Getting latest run_id for in {envt} environment")
+    run_qry = f"SELECT MAX(run_id) FROM meta.pipeline_run"
+    engine = get_engine()
+    try:
+        with engine.begin() as conn:
+            logger.info(f"Retrieving latest run_id")
+            result = conn.execute(text(run_qry)).fetchone()[0]
+            latest_run_id = result if result is not None else 0
+            logger.info(f"Latest run id: {latest_run_id}")
+            return latest_run_id
+    except Exception as e:
+        logger.error(f"Error getting latest run id: {e}")
+        raise e
 
 def get_raw_batch(data: str, envt: str, offset_id: int, batch_size: int) -> pd.DataFrame:
     logger.info(f"Getting raw batch for {data} in {envt} environment from {offset_id} to {offset_id + batch_size}")
@@ -93,10 +149,47 @@ def get_raw_batch(data: str, envt: str, offset_id: int, batch_size: int) -> pd.D
             df = pd.DataFrame(rows, columns=columns)
             return df
     except Exception as e:
-        logger.error(f"Error getting latest raw offset id: {e}", exc_info=True)
+        logger.error(f"Error getting latest raw offset id: {e}")
         raise e
 
+def add_uuids(payload: dict[str, Any], data: str) -> dict[str, Any]:
+    payload_cln = deepcopy(payload)
+    match data:
+        case "shipment_status":
+            return add_shipment_status_uuids(payload_cln)
+        case "shipment_products":
+            return add_shipment_products_uuids(payload_cln)
+        case _:
+            raise ValueError(f"Invalid data: {data}")
 
+def _build_uuid(*args: str) -> UUID:
+    return str(uuid5(_ROOT_NAMESPACE, ''.join(args)))
+
+def add_shipment_status_uuids(payload_cln: dict[str, Any]) -> dict[str, Any]:
+    payload_cln["event_data"]["shipment_uuid"] = _build_uuid(payload_cln["event_data"]["shipment_business_id"])
+    payload_cln["event_data"]["shipment_status_uuid"] = _build_uuid(payload_cln["event_data"]["shipment_business_id"], payload_cln["event_data"]["status"])
+
+    return payload_cln
+
+def add_shipment_products_uuids(payload_cln: dict[str, Any]) -> dict[str, Any]:
+    payload_cln["event_data"]["shipment_uuid"] = _build_uuid(payload_cln["event_data"]["shipment_business_id"])
+
+    for item in payload_cln["event_data"]["products"]:
+        item["shipment_product_uuid"] = _build_uuid(payload_cln["event_data"]["shipment_business_id"], item["product_id"])
+
+    return payload_cln
+
+def insert_pipeline_batch_run(run_id: int, batch_id: int, job_name: str, status: str, started_at: datetime,
+                                from_id_exclusive: int, to_id_inclusive: int, rows_read: int, rows_written: int, error_message: str, traceback_message: str):
+    insert_qry = """INSERT INTO meta.pipeline_run (run_id, batch_id, job_name, status, started_at, finished_at, 
+                    from_id_exclusive, to_id_inclusive, rows_read, rows_written, error_message, traceback_message)
+                    VALUES (:run_id, :batch_id, :job_name, :status, :started_at, NOW(),
+                            :from_id_exclusive, :to_id_inclusive, :rows_read, :rows_written, :error_message, :traceback_message)"""
+    engine = get_engine()
+    with engine.begin() as conn:
+        conn.execute(text(insert_qry), {"run_id": run_id, "batch_id": batch_id, "job_name": job_name, "status": status, "started_at": started_at, 
+                                        "from_id_exclusive": from_id_exclusive, "to_id_inclusive": to_id_inclusive, 
+                                        "rows_read": rows_read, "rows_written": rows_written, "error_message": error_message, "traceback_message": traceback_message})
 
 def main() -> None:
     # to be created later when I want to add __init__.py and trigger via cli with args

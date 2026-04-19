@@ -9,6 +9,9 @@ shipment_status:
   quarantine_db_schema: quarantine
   quarantine_table: shipment_status
   quarantine_insert_sql_path: db/sql/quarantine/quarantine_shipment_status_insert.sql
+  cln_db_schema: cln
+  cln_table: shipment_status
+  cln_insert_sql_path: db/sql/cln/cln_shipment_status_insert.sql
 
 shipment_products:
   lz_pending_path: landing-zone/pending/shipment_products
@@ -21,3 +24,6 @@ shipment_products:
   quarantine_db_schema: quarantine
   quarantine_table: shipment_products
   quarantine_insert_sql_path: db/sql/quarantine/quarantine_shipment_products_insert.sql
+  cln_db_schema: cln
+  cln_table: shipment_products
+  cln_insert_sql_path: db/sql/cln/cln_shipment_products_insert.sql

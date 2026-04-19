@@ -68,6 +68,22 @@ def insert_row_builder(target_table: str, content: dict[str, Any],
                         "traceback_message": traceback_message,
                         "meta_insert_timestamp": meta_insert_timestamp,
                         "meta_source_file_path": source_filepath}
+        case "cln.shipment_status":
+            return {"payload_cln": Jsonb(content["payload_cln"]), "event_id": content["event_id"],
+                        "event_timestamp": content["event_timestamp"],
+                        "event_name": content["event_name"],
+                        "raw_offset_id": content["offset_id"],
+                        "meta_insert_timestamp": meta_insert_timestamp,
+                        "meta_update_timestamp": None,
+                        "meta_source_file_path": source_filepath}
+        case "cln.shipment_products":
+            return {"payload_cln": Jsonb(content["payload_cln"]), "event_id": content["event_id"],
+                        "event_timestamp": content["event_timestamp"],
+                        "event_name": content["event_name"],
+                        "raw_offset_id": content["offset_id"],
+                        "meta_insert_timestamp": meta_insert_timestamp,
+                        "meta_update_timestamp": None,
+                        "meta_source_file_path": source_filepath}
         case _:
             logger.error(f"Whatcha talkin' bout Willis? Unknown table: {target_table}")
             raise ValueError(f"Whatcha talkin' bout Willis? Unknown table: {target_table}")

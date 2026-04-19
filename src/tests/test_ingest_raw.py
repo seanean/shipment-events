@@ -1,15 +1,14 @@
-from ingest_raw import (resolve_config, _REPO_ROOT_PATH,
-                        validate_schema, validate_file,
-                        insert_row_builder, get_schema, get_file, 
-                        get_insert_statement, store_file, 
-                        cleanup_pending_lz, get_config)
+from ingest_raw import (validate_schema, validate_file,
+                        get_schema, get_file, 
+                        store_file, cleanup_pending_lz)
+from config_util import get_config, resolve_config, _REPO_ROOT_PATH
+from db import get_insert_statement, insert_row_builder
 from pathlib import Path
 from jsonschema import Draft202012Validator, SchemaError, ValidationError
 import pytest
 from psycopg.types.json import Jsonb
 from datetime import datetime, UTC
 import json
-import os
 
 # resolve_config tests
 def test_resolve_config() -> None:
@@ -23,7 +22,10 @@ def test_resolve_config() -> None:
         'raw_insert_sql_path': 'db/sql/raw/raw_shipment_status_insert.sql',
         'quarantine_db_schema': 'quarantine',
         'quarantine_table': 'shipment_status',
-        'quarantine_insert_sql_path': 'db/sql/quarantine/quarantine_shipment_status_insert.sql'
+        'quarantine_insert_sql_path': 'db/sql/quarantine/quarantine_shipment_status_insert.sql',
+        'cln_db_schema': 'cln',
+        'cln_table': 'shipment_status',
+        'cln_insert_sql_path': 'db/sql/cln/cln_shipment_status_insert.sql'
 
     }
     result = resolve_config(loaded_config)
@@ -37,6 +39,7 @@ def test_resolve_config() -> None:
     assert isinstance(result.quarantine_insert_sql_path, Path)
     assert isinstance(result.raw_target_table, str)
     assert isinstance(result.quarantine_target_table, str)
+    assert isinstance(result.cln_target_table, str)
     # path checks
     assert result.lz_pending_path == _REPO_ROOT_PATH.joinpath(loaded_config['lz_pending_path']   )
     assert result.lz_archive_path == _REPO_ROOT_PATH.joinpath(loaded_config['lz_archive_path'])
@@ -44,9 +47,11 @@ def test_resolve_config() -> None:
     assert result.schema_path == _REPO_ROOT_PATH.joinpath(loaded_config['schema_path'])
     assert result.raw_insert_sql_path == _REPO_ROOT_PATH.joinpath(loaded_config['raw_insert_sql_path'])
     assert result.quarantine_insert_sql_path == _REPO_ROOT_PATH.joinpath(loaded_config['quarantine_insert_sql_path'])
+    assert result.cln_insert_sql_path == _REPO_ROOT_PATH.joinpath(loaded_config['cln_insert_sql_path'])
     # table checks
     assert result.raw_target_table == f'{loaded_config['raw_db_schema']}.{loaded_config['raw_table']}'
     assert result.quarantine_target_table == f'{loaded_config['quarantine_db_schema']}.{loaded_config['quarantine_table']}'
+    assert result.cln_target_table == f'{loaded_config['cln_db_schema']}.{loaded_config['cln_table']}'
 
 # validate_schema tests
 
