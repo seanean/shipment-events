@@ -1,5 +1,6 @@
 CREATE TABLE meta.pipeline_run (
-    run_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    history_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    run_id BIGINT NOT NULL,
     batch_id BIGINT NOT NULL,
     job_name VARCHAR NOT NULL,
     status TEXT NOT NULL CHECK (status IN ('success', 'failed')),
@@ -9,7 +10,8 @@ CREATE TABLE meta.pipeline_run (
     to_id_inclusive BIGINT,
     rows_read BIGINT,
     rows_written BIGINT,
-    error_message VARCHAR
+    error_message VARCHAR,
+    traceback_message VARCHAR
 );
 
 ALTER TABLE meta.pipeline_run OWNER TO shrw;

@@ -5,7 +5,7 @@ CREATE TABLE cln.shipment_products (
     payload_cln JSONB NOT NULL,
     raw_offset_id BIGINT NOT NULL,
     meta_insert_timestamp TIMESTAMPTZ NOT NULL,
-    meta_update_timestamp TIMESTAMPTZ NOT NULL,
+    meta_update_timestamp TIMESTAMPTZ,
     meta_source_file_path VARCHAR NOT NULL
 );
 ALTER TABLE cln.shipment_products OWNER TO shrw;
