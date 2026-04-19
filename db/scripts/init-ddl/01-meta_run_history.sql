@@ -12,7 +12,8 @@ CREATE TABLE meta.pipeline_run (
     rows_read BIGINT,
     rows_written BIGINT,
     error_message VARCHAR,
-    traceback_message VARCHAR
+    traceback_message VARCHAR,
+    meta_insert_timestamp TIMESTAMPTZ
 );
 
 ALTER TABLE meta.pipeline_run OWNER TO shrw;
