@@ -11,6 +11,6 @@ VALUES (
     :event_timestamp,
     :event_name,
     :payload,
-    :meta_insert_timestamp,
+    NOW(),
     :meta_source_file_path
 )

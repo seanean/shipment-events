@@ -15,6 +15,6 @@ VALUES (
     :payload,
     :error_message,
     :traceback_message,
-    :meta_insert_timestamp,
+    NOW(),
     :meta_source_file_path
 )

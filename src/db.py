@@ -33,24 +33,22 @@ def get_insert_statement(insert_sql_path: Path) -> str:
         logger.debug(f"Insert query: {insert_qry}")
         return insert_qry
 
-def insert_row_builder(target_table: str, content: dict[str, Any], 
-                       meta_insert_timestamp: datetime,
+def insert_row_builder(target_table: str, content: dict[str, Any],
                        meta_source_filepath: str, error_message: str | None = None,
                        traceback_message: str | None = None, ) -> dict[str, Any]:
     logger.info(f"Building insert row for {target_table}")
 
+    # these are meant to mirror the :parameters that are present in the sql queries
     match target_table:
         case "raw.shipment_status":
             return {"payload": Jsonb(content), "event_id": content["event_id"],
                         "event_timestamp": content["event_timestamp"],
                         "event_name": content["event_name"],
-                        "meta_insert_timestamp": meta_insert_timestamp,
                         "meta_source_file_path": meta_source_filepath}
         case "raw.shipment_products":
             return {"payload": Jsonb(content), "event_id": content["event_id"],
                         "event_timestamp": content["event_timestamp"],
                         "event_name": content["event_name"],
-                        "meta_insert_timestamp": meta_insert_timestamp,
                         "meta_source_file_path": meta_source_filepath}
         case "quarantine.shipment_status":
             return {"payload": Jsonb(content), "event_id": content["event_id"],
@@ -58,7 +56,6 @@ def insert_row_builder(target_table: str, content: dict[str, Any],
                         "event_name": content["event_name"],
                         "error_message": error_message,
                         "traceback_message": traceback_message,
-                        "meta_insert_timestamp": meta_insert_timestamp,
                         "meta_source_file_path": meta_source_filepath}
         case "quarantine.shipment_products":
             return {"payload": Jsonb(content), "event_id": content["event_id"],
@@ -66,14 +63,12 @@ def insert_row_builder(target_table: str, content: dict[str, Any],
                         "event_name": content["event_name"],
                         "error_message": error_message,
                         "traceback_message": traceback_message,
-                        "meta_insert_timestamp": meta_insert_timestamp,
                         "meta_source_file_path": meta_source_filepath}
         case "cln.shipment_status":
             return {"payload_cln": Jsonb(content["payload_cln"]), "event_id": content["event_id"],
                         "event_timestamp": content["event_timestamp"],
                         "event_name": content["event_name"],
                         "raw_offset_id": content["offset_id"],
-                        "meta_insert_timestamp": meta_insert_timestamp,
                         "meta_update_timestamp": None,
                         "meta_source_file_path": meta_source_filepath}
         case "cln.shipment_products":
@@ -81,7 +76,6 @@ def insert_row_builder(target_table: str, content: dict[str, Any],
                         "event_timestamp": content["event_timestamp"],
                         "event_name": content["event_name"],
                         "raw_offset_id": content["offset_id"],
-                        "meta_insert_timestamp": meta_insert_timestamp,
                         "meta_update_timestamp": None,
                         "meta_source_file_path": meta_source_filepath}
         case _:
