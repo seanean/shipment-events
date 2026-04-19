@@ -20,13 +20,12 @@ _ROOT_NAMESPACE = uuid5(NAMESPACE_DNS, 'shipment-events')
 @dataclass(frozen=False)
 class CleansedParameters:
     latest_run_id: int | None = None
-    latest_raw_offset_id: int | None = None
+    latest_raw_offset_id: int | None = 0
     run_id: int | None = None
     batch_id: int = 1
     job_name: str | None = None
     status: str | None = None
     started_at: datetime | None = None
-    starting_from_id_exclusive: int = 0
     from_id_exclusive: int = 0
     to_id_inclusive: int = 0
     rows_read: int = 0
@@ -52,34 +51,17 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
     config = resolve_config(loaded_config)
 
     # what run is this?
-    try:
-        params.latest_run_id = get_latest_run_id(envt)
-        params.run_id = params.latest_run_id + 1
-        logger.info(f"Latest run ID: {params.latest_run_id}, current run ID: {params.run_id}")
-    except Exception as e:
-        logger.error(f"Error getting latest run id: {e}")
-        raise e
+    params.latest_run_id = get_latest_run_id(envt)
+    params.run_id = params.latest_run_id + 1
+    logger.info(f"Latest run ID: {params.latest_run_id}, current run ID: {params.run_id}")
 
     # what raw data do we start from?
-    try:
-        params.latest_raw_offset_id = get_latest_raw_offset_id(params.job_name)
-        logger.info(f"Latest raw offset id: {params.latest_raw_offset_id}")
-    except Exception as e:
-        logger.error(f"Error getting latest raw offset id: {e}. {traceback.format_exc()}")
-        try:
-            params.status = 'failed'
-            params.error_message = str(e)
-            params.traceback_message = traceback.format_exc()
-            insert_pipeline_batch_run(params)
-        except Exception as meta_e:
-            logger.error(f'Error inserting pipeline failed: {meta_e}')
-            raise meta_e from e
-        raise e
-
-    # start getting batches. go until a batch is empty
+    params.latest_raw_offset_id = get_latest_raw_offset_id(params)
     params.from_id_exclusive = params.latest_raw_offset_id
+    
+    # start getting batches. go until a batch is empty
     while True:
-        batch_df, params.rows_read = get_raw_batch(config.raw_target_table, envt, params.from_id_exclusive, _BATCH_SIZE)
+        batch_df, params.rows_read = get_raw_batch(config.raw_target_table, envt, params, _BATCH_SIZE)
         if batch_df.empty:
             logger.info(f'Batch is empty, exiting')
             params.status = 'success'
@@ -125,8 +107,6 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
                 params.status = 'failed'
                 params.error_message = str(e)
                 params.traceback_message = traceback.format_exc()
-                # TODO: to check, if inserting a batch fails after x rows, will any of the rows be inserted or not?
-                # this would drive whether params.rows_written = 0 would be accurate or if I need to pull a row count from the failed insert.
                 insert_pipeline_batch_run(params)
             # if that failed too, that's not good
             except Exception as meta_e:
@@ -137,28 +117,43 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
         # after cln insert success, insert a pipeline run success
         try:
             params.status = 'success'
+            params.error_message = None
+            params.traceback_message = None
             insert_pipeline_batch_run(params)
         except Exception as meta_e:
             logger.error(f'Error inserting pipeline success: {meta_e}')
             raise meta_e
 
+        # prepare for next loop iteration
         params.batch_id +=1
         params.from_id_exclusive = params.to_id_inclusive
+        params.rows_read = 0
+        params.rows_written = 0
+        params.error_message = None
+        params.traceback_message = None
 
 
-def get_latest_raw_offset_id(job_name: str) -> int:
-    logger.info(f"Getting latest raw offset id for {job_name}")
+def get_latest_raw_offset_id(iparams: CleansedParameters) -> int:
+    logger.info(f"Getting latest raw offset id for {iparams.job_name}")
     offset_qry = f"SELECT MAX(to_id_inclusive) FROM meta.pipeline_run WHERE job_name = :job_name AND status = 'success'"
     engine = get_engine()
     try:
         with engine.begin() as conn:
             logger.info(f"Retrieving latest raw offset id")
-            result = conn.execute(text(offset_qry), {"job_name": job_name}).fetchone()[0]
+            result = conn.execute(text(offset_qry), {"job_name": iparams.job_name}).fetchone()[0]
             latest_offset_id = result if result is not None else 0
             logger.info(f"Latest raw offset id: {latest_offset_id}")
             return latest_offset_id
     except Exception as e:
         logger.error(f"Error getting latest raw offset id: {e}")
+        try:
+            iparams.status = 'failed'
+            iparams.error_message = str(e)
+            iparams.traceback_message = traceback.format_exc()
+            insert_pipeline_batch_run(iparams)
+        except Exception as meta_e:
+            logger.error(f'Error inserting pipeline failed: {meta_e}')
+            raise meta_e from e
         raise e
 
 def get_latest_run_id(envt: str) -> int:
@@ -176,20 +171,28 @@ def get_latest_run_id(envt: str) -> int:
         logger.error(f"Error getting latest run id: {e}")
         raise e
 
-def get_raw_batch(target_table: str, envt: str, offset_id: int, batch_size: int) -> Tuple[pd.DataFrame, int]:
+def get_raw_batch(target_table: str, envt: str, iparams: CleansedParameters, batch_size: int) -> Tuple[pd.DataFrame, int]:
+    offset_id = iparams.from_id_exclusive
     logger.info(f"Getting raw batch from {target_table} in {envt} environment from {offset_id} to {offset_id + batch_size}")
     batch_qry = f'SELECT * FROM {target_table} WHERE offset_id > :offset_id LIMIT :batch_size'
     engine = get_engine()
     try:
         with engine.begin() as conn:
-            logger.info(f"Retrieving latest raw offset id")
             result = conn.execute(text(batch_qry), {"offset_id": offset_id, "batch_size": batch_size})
             rows = result.fetchall()
             columns = result.keys()
             df = pd.DataFrame(rows, columns=columns)
             return df, df.shape[0]
     except Exception as e:
-        logger.error(f"Error getting latest raw offset id: {e}")
+        logger.error(f"Error getting raw batch: {e}")
+        try:
+            iparams.status = 'failed'
+            iparams.error_message = str(e)
+            iparams.traceback_message = traceback.format_exc()
+            insert_pipeline_batch_run(iparams)
+        except Exception as meta_e:
+            logger.error(f'Error inserting pipeline failed: {meta_e}')
+            raise meta_e from e
         raise e
 
 def merge_df(df: pd.DataFrame, partition_by, order_by) -> Tuple[pd.DataFrame, int]:
@@ -245,7 +248,7 @@ def insert_pipeline_batch_run(iparams: CleansedParameters):
         conn.execute(text(insert_qry), {"run_id": iparams.run_id, "batch_id": iparams.batch_id,
                                         "job_name": iparams.job_name, "status": iparams.status,
                                         "started_at": iparams.started_at,
-                                        "starting_from_id_exclusive": iparams.starting_from_id_exclusive, "from_id_exclusive": iparams.from_id_exclusive,
+                                        "starting_from_id_exclusive": iparams.latest_raw_offset_id, "from_id_exclusive": iparams.from_id_exclusive,
                                         "to_id_inclusive": iparams.to_id_inclusive, "rows_read": iparams.rows_read,
                                         "rows_written": iparams.rows_written, "error_message": iparams.error_message,
                                         "traceback_message": iparams.traceback_message})
