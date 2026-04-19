@@ -56,3 +56,6 @@ mypy-raw:
 
 mypy-cleanse:
 	.venv/bin/mypy src/cleanse.py
+
+rerun:
+	make resetall && make composeup && make raw && make cleanse

@@ -70,7 +70,7 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
         rows_read = batch_df.shape[0]
 
         # get latest per event ID. alternative approach would be based on event timestamp
-        batch_df_merged: pd.DataFrame = batch_df.loc[batch_df["offset_id"].isin(batch_df.groupby("event_id")["offset_id"].max())]
+        batch_df_merged = merge_df(batch_df, partition_by="event_id", order_by="offset_id")
         to_id_inclusive = batch_df_merged["offset_id"].max()
 
         # converting to dict because df.apply is not vectorized and list comprehensions should be faster
@@ -175,6 +175,10 @@ def get_raw_batch(data: str, envt: str, offset_id: int, batch_size: int) -> pd.D
     except Exception as e:
         logger.error(f"Error getting latest raw offset id: {e}")
         raise e
+
+def merge_df(df: pd.DataFrame, partition_by, order_by) -> pd.DataFrame:
+    return df.loc[df[order_by].isin(df.groupby(partition_by)[order_by].max())]
+
 
 def add_uuids(payload: dict[str, Any], data: str) -> dict[str, Any]:
     payload_cln = deepcopy(payload)
