@@ -43,9 +43,19 @@ project-structure/
 
 ### Phase 3 - Raw -> Cleansed - 2026-04-19
 
-Working on cleansed at the moment, see blog.
+Cleansed is working!
+- incremental ingest from raw
+- merging on keys (within batches and on inserts)
+- adding uuids
+- storing cln
+- tracking run history in meta.pipeline_run
 
-Have first batch being processed from raw -> cleansed and a pipeline status run being inserted. Lot's still to do!
+Should still do some refactoring and writing tests.
+
+<h1 align="center">
+  <img src="resources/shipment-events - phase-3.png" alt="Shipment Events Phase 3" width="950">
+</h1>
+
 
 ### Phase 2 - LZ -> Quarantine - 2026-04-12
 

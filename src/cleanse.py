@@ -1,23 +1,16 @@
-# import os
-# import shutil
-# import yaml
 import logging
-# import json
-# from pathlib import Path
-# from jsonschema import Draft202012Validator, ValidationError, SchemaError
+import traceback
+import pandas as pd
+
 from db import get_engine, get_insert_statement, insert_row_builder
 from sqlalchemy import text
 from datetime import datetime, UTC
-import traceback
-# from psycopg.types.json import Jsonb
-# from dataclasses import dataclass
 from typing import Any, Literal, cast
-import pandas as pd
-# only required if running cleanse.py directly:
-from app_logger import configure_logger
 from uuid import uuid5, NAMESPACE_DNS, UUID
 from copy import deepcopy
 from config_util import get_config, resolve_config, _REPO_ROOT_PATH
+from app_logger import configure_logger # only required if running cleanse.py directly
+
 logger = logging.getLogger(__name__)
 
 _BATCH_SIZE = 1 # 200
@@ -38,6 +31,7 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
     loaded_config = get_config(data, config_path)
     config = resolve_config(loaded_config)
 
+    # what run is this?
     try:
         latest_run_id = get_latest_run_id(envt)
         run_id = latest_run_id + 1
@@ -46,6 +40,7 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
         logger.error(f"Error getting latest run id: {e}")
         raise e
 
+    # what raw data do we start from?
     try:
         latest_raw_offset_id = get_latest_raw_offset_id(job_name)
         logger.info(f"Latest raw offset id: {latest_raw_offset_id}")
@@ -62,9 +57,8 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
         raise e
     
 
-
+    # start getting batches
     from_id_exclusive = latest_raw_offset_id
-    # run until batches don't return anything else.
     while True:
         batch_df = get_raw_batch(data, envt, from_id_exclusive, _BATCH_SIZE)
         if batch_df.empty:

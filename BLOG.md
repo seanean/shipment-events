@@ -213,7 +213,8 @@ Researched:
 - added uuids to the different events
 - centralized get_insert and insert_row_builder and added support for cln tables
 - inserting records for cln
-- inserting records into pipeline_run on success for failure
+- inserting records into pipeline_run on success or failure
+- looping through batches
 
 ### Learned
 
