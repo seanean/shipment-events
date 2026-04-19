@@ -122,7 +122,7 @@ def insert_to_table(insert_sql_path: Path, target_table: str,
                     file: dict[str, Any], source_filepath: str, error_message: str | None = None, 
                     traceback_message: str | None = None) -> None:
     logger.info(f"Inserting file into {target_table}")
-    insert_row = insert_row_builder(target_table, file, datetime.now(UTC), source_filepath, 
+    insert_row = insert_row_builder(target_table, file, source_filepath, 
                                     error_message, traceback_message)                        
     logger.info(f"Insert row builder successful")
     logger.debug(f"Insert row: {insert_row}")
