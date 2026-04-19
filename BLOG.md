@@ -125,7 +125,6 @@ How I am using AI:
 - created quarantine tables
 - created some bad events for validating the validating (the validating the validating)
 - added a rollback on the insert in case file move to archive/quarantine fails
-
 #### table tweaks
 - reordered raw table columns, also changed varchar(x) to varchar (not recommended to use specified length in Postgres)
 - added meta_insert_timestamp to raw and quarantine so you can see when records are added.
@@ -215,6 +214,9 @@ Researched:
 - inserting records for cln
 - inserting records into pipeline_run on success or failure
 - looping through batches
+- passing around a million variables was not very fun so i made a dataclass. much nicer experience.
+- testing added
+- made logging a little prettier
 
 ### Learned
 

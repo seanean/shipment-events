@@ -50,8 +50,6 @@ Cleansed is working!
 - storing cln
 - tracking run history in meta.pipeline_run
 
-Should still do some refactoring and writing tests.
-
 <h1 align="center">
   <img src="resources/shipment-events - phase-3.png" alt="Shipment Events Phase 3" width="950">
 </h1>

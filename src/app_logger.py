@@ -10,7 +10,7 @@ def configure_logger() -> logging.Logger:
     logging_level = logging.INFO
 
     if not logger.handlers:
-        fmt = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(funcName)s %(message)s', datefmt='%Y-%m-%d %H:%M:%S UTC')
+        fmt = logging.Formatter('%(asctime)s | %(levelname)s || %(name)s | %(funcName)s || %(message)s', datefmt='%Y-%m-%d %H:%M:%S UTC')
         fmt.converter = time.gmtime
         # create fileHandler for logging to send data to file
         #file_handler = logging.FileHandler(datetime.now().strftime('%Y-%m-%d_%H-%M_madalier.log'))
