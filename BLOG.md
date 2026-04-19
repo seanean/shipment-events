@@ -39,11 +39,10 @@ In the readme I think I'll give updates on each phase of the project, but for no
 
 - `No concurrency` - currently, I haven't done anything to allow multiple versions of the pipeline to run at the same time. There's some cleanup logic that could impact continuous loading / removing of data. My guess: look at this when piping tons of events in or maybe when I try PySpark?
 
-### To Do
+### Don't forget
 
-- everything above
-- add typing wherever possible
-- integration tests!
+- integration tests! (for later)
+- update model to use timestamptz
 
 ## How am I developing it?
 
@@ -192,16 +191,29 @@ Things I'd like to do in cleansed:
 - ✓ Update raw DDLs (add indexes for batching)
 - ✓ Create cleansed DDLs (w/ event id index)
 - ✓ Create pipeline history DDL
-- Merge on event ID
-- Generate UUIDs
+- ✓ Merge on event ID
+- ✓ Generate UUIDs
 - Cast to data types
 - Drop unneeded fields
 - Add default values
+    - probably should map events to raw schema so that missing optional fields are created with default values?
 - Log aggregates
 
 Researched:
 - how do I handle merging with incremental stuff?
 - how do I not have to load everything in memory?
+
+### Did
+
+- Reworked make and logging to allow triggering of raw or cleansed directly.
+- set up cleansed tables
+- set up a pipeline run table to store info on cleansed runs (probably other layers as well) and keep track of how many IDs have been processed
+- selected from raw
+- deduplicated on latest offset_id per event id
+- added uuids to the different events
+- centralized get_insert and insert_row_builder and added support for cln tables
+- inserting records for cln
+- inserting records into pipeline_run on success for failure
 
 ### Learned
 
@@ -210,6 +222,7 @@ Researched:
 | --- | --- |
 | Incremental Processing - detecting progress | A couple of ways to do this. 1. `storing progress on raw` - this would mean having a `processed_at` field on raw table. I don't like this because it means altering raw records a lot.  |
 | Incremental Processing - detecting progress |2. `pipeline state table` - something like 'latest from raw.t1 is yesterday'. I like this. |
+| Incremental Processing - detecting progress |Dug in a lot on the topic of how to handle batching. I'm going to use a `pipeline_run_history` table instead of a `pipeline_state_table`, but it will serve a dual purpose. a key question for me was how to track the progress of cleansed. If you only insert on completion and run batches of 200 and need to process 1000 in total, if you fail at 500 then you don't have a `success` in the `state`/`history` table and your next run will redo the first 499. To circumvent this somewhat, I will add run+batch records in the `history` table. It's possible that a run is incomplete, but the next run will pick up from the last completed batch. If a run fails, will insert a run record with status failed for historical tracking. |
 | Fetch Strategy | 1. a [`server-side cursor`](https://www.postgresql.org/docs/current/plpgsql-cursors.html) - `Rather than executing a whole query at once, it is possible to set up a cursor that encapsulates the query, and then read the query result a few rows at a time. One reason for doing this is to avoid memory overrun when the result contains a large number of rows.` It makes sense, but there are details about behavior of the connection / transaction that I'd have to figure out. Might prefer option 2.|
 | Fetch Strategy | 2. `batch querying` - linked to pipeline state. Can batch by a date or by a row ID. can fine-tune batching to the size of the data which is nice (wide table 5 rows, narrow table 50 rows).  |
 | Event merging | To some degree you can rely on Postgres' merge on key logic. However, if you're going to bulk insert (like I will be) you'll need to avoid that a single batch contains >1 of the same event ID. Strategy will be a combination of both: merge in batch in Pandas, merge in table in DB. </br> </br> Another alternative could be to have a post-cleansing staging table that has everything, then I select a `distinct on event ID order by event timestamp desc` into the actual cleansing table. |

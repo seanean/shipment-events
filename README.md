@@ -41,6 +41,12 @@ project-structure/
 
 ## Version Updates
 
+### Phase 3 - Raw -> Cleansed - 2026-04-19
+
+Working on cleansed at the moment, see blog.
+
+Have first batch being processed from raw -> cleansed and a pipeline status run being inserted. Lot's still to do!
+
 ### Phase 2 - LZ -> Quarantine - 2026-04-12
 
 Now that's what I call quarantining.
