@@ -19,20 +19,20 @@ _ROOT_NAMESPACE = uuid5(NAMESPACE_DNS, 'shipment-events')
 
 @dataclass(frozen=False)
 class CleansedParameters:
-    latest_run_id: int = None
-    latest_raw_offset_id: int = None
-    run_id: int = None
+    latest_run_id: int | None = None
+    latest_raw_offset_id: int | None = None
+    run_id: int | None = None
     batch_id: int = 1
-    job_name: str = None
-    status: str = None
-    started_at: datetime = None
+    job_name: str | None = None
+    status: str | None = None
+    started_at: datetime | None = None
     starting_from_id_exclusive: int = 0
     from_id_exclusive: int = 0
     to_id_inclusive: int = 0
     rows_read: int = 0
     rows_written: int = 0
-    error_message: str = None
-    traceback_message: str = None
+    error_message: str | None = None
+    traceback_message: str | None = None
 
 
 def cleanse(data: Literal["shipment_status", "shipment_products"],
