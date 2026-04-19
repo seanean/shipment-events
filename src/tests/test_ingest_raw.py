@@ -116,7 +116,7 @@ def test_validate_file_rejects_invalid_file() -> None:
                         "quarantine.shipment_status", "quarantine.shipment_products"])
 
 def test_insert_row_builder_returns_valid_dict(target_table: str) -> None:
-    source_filepath = "test.json"
+    meta_source_filepath = "test.json"
     error_message = "error"
     traceback_message = "traceback"
     # default timestamp of 1/1/1970 00:00:00
@@ -133,13 +133,13 @@ def test_insert_row_builder_returns_valid_dict(target_table: str) -> None:
                         "event_timestamp": file["event_timestamp"],
                         "event_name": file["event_name"],
                         "meta_insert_timestamp": meta_insert_timestamp,
-                        "meta_source_file_path": source_filepath}
+                        "meta_source_file_path": meta_source_filepath}
         case "raw.shipment_products":
             expected_result = {"payload": Jsonb(file), "event_id": file["event_id"],
                         "event_timestamp": file["event_timestamp"],
                         "event_name": file["event_name"],
                         "meta_insert_timestamp": meta_insert_timestamp,
-                        "meta_source_file_path": source_filepath}
+                        "meta_source_file_path": meta_source_filepath}
         case "quarantine.shipment_status":
             expected_result = {"payload": Jsonb(file), "event_id": file["event_id"],
                         "event_timestamp": file["event_timestamp"],
@@ -147,7 +147,7 @@ def test_insert_row_builder_returns_valid_dict(target_table: str) -> None:
                         "error_message": error_message,
                         "traceback_message": traceback_message,
                         "meta_insert_timestamp": meta_insert_timestamp,
-                        "meta_source_file_path": source_filepath}
+                        "meta_source_file_path": meta_source_filepath}
         case "quarantine.shipment_products":
             expected_result = {"payload": Jsonb(file), "event_id": file["event_id"],
                         "event_timestamp": file["event_timestamp"],
@@ -155,10 +155,10 @@ def test_insert_row_builder_returns_valid_dict(target_table: str) -> None:
                         "error_message": error_message,
                         "traceback_message": traceback_message,
                         "meta_insert_timestamp": meta_insert_timestamp,
-                        "meta_source_file_path": source_filepath}
+                        "meta_source_file_path": meta_source_filepath}
 
     result = insert_row_builder(target_table, file, meta_insert_timestamp, 
-                                source_filepath, error_message, traceback_message)
+                                meta_source_filepath, error_message, traceback_message)
     
     # for each key in expected_result, check if result[key] == expected_result[key]
     for key in expected_result:
@@ -169,7 +169,7 @@ def test_insert_row_builder_returns_valid_dict(target_table: str) -> None:
 
 def test_insert_row_builder_raises_valueerror_for_unknown_table() -> None:
     target_table = "unknown"
-    source_filepath = "test.json"
+    meta_source_filepath = "test.json"
     error_message = "error"
     traceback_message = "traceback"
     meta_insert_timestamp = datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
@@ -179,7 +179,7 @@ def test_insert_row_builder_raises_valueerror_for_unknown_table() -> None:
         "event_name": "shipment_status"
     }
     with pytest.raises(ValueError):
-        insert_row_builder(target_table, file, source_filepath, error_message, traceback_message, meta_insert_timestamp)
+        insert_row_builder(target_table, file, meta_source_filepath, error_message, traceback_message, meta_insert_timestamp)
 
 
 def test_get_schema_returns_dict(tmp_path: Path) -> None:

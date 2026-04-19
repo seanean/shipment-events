@@ -35,7 +35,7 @@ def get_insert_statement(insert_sql_path: Path) -> str:
 
 def insert_row_builder(target_table: str, content: dict[str, Any], 
                        meta_insert_timestamp: datetime,
-                       source_filepath: str, error_message: str | None = None,
+                       meta_source_filepath: str, error_message: str | None = None,
                        traceback_message: str | None = None, ) -> dict[str, Any]:
     logger.info(f"Building insert row for {target_table}")
 
@@ -45,13 +45,13 @@ def insert_row_builder(target_table: str, content: dict[str, Any],
                         "event_timestamp": content["event_timestamp"],
                         "event_name": content["event_name"],
                         "meta_insert_timestamp": meta_insert_timestamp,
-                        "meta_source_file_path": source_filepath}
+                        "meta_source_file_path": meta_source_filepath}
         case "raw.shipment_products":
             return {"payload": Jsonb(content), "event_id": content["event_id"],
                         "event_timestamp": content["event_timestamp"],
                         "event_name": content["event_name"],
                         "meta_insert_timestamp": meta_insert_timestamp,
-                        "meta_source_file_path": source_filepath}
+                        "meta_source_file_path": meta_source_filepath}
         case "quarantine.shipment_status":
             return {"payload": Jsonb(content), "event_id": content["event_id"],
                         "event_timestamp": content["event_timestamp"],
@@ -59,7 +59,7 @@ def insert_row_builder(target_table: str, content: dict[str, Any],
                         "error_message": error_message,
                         "traceback_message": traceback_message,
                         "meta_insert_timestamp": meta_insert_timestamp,
-                        "meta_source_file_path": source_filepath}
+                        "meta_source_file_path": meta_source_filepath}
         case "quarantine.shipment_products":
             return {"payload": Jsonb(content), "event_id": content["event_id"],
                         "event_timestamp": content["event_timestamp"],
@@ -67,7 +67,7 @@ def insert_row_builder(target_table: str, content: dict[str, Any],
                         "error_message": error_message,
                         "traceback_message": traceback_message,
                         "meta_insert_timestamp": meta_insert_timestamp,
-                        "meta_source_file_path": source_filepath}
+                        "meta_source_file_path": meta_source_filepath}
         case "cln.shipment_status":
             return {"payload_cln": Jsonb(content["payload_cln"]), "event_id": content["event_id"],
                         "event_timestamp": content["event_timestamp"],
@@ -75,7 +75,7 @@ def insert_row_builder(target_table: str, content: dict[str, Any],
                         "raw_offset_id": content["offset_id"],
                         "meta_insert_timestamp": meta_insert_timestamp,
                         "meta_update_timestamp": None,
-                        "meta_source_file_path": source_filepath}
+                        "meta_source_file_path": meta_source_filepath}
         case "cln.shipment_products":
             return {"payload_cln": Jsonb(content["payload_cln"]), "event_id": content["event_id"],
                         "event_timestamp": content["event_timestamp"],
@@ -83,7 +83,7 @@ def insert_row_builder(target_table: str, content: dict[str, Any],
                         "raw_offset_id": content["offset_id"],
                         "meta_insert_timestamp": meta_insert_timestamp,
                         "meta_update_timestamp": None,
-                        "meta_source_file_path": source_filepath}
+                        "meta_source_file_path": meta_source_filepath}
         case _:
             logger.error(f"Whatcha talkin' bout Willis? Unknown table: {target_table}")
             raise ValueError(f"Whatcha talkin' bout Willis? Unknown table: {target_table}")
