@@ -15,7 +15,7 @@ Want to read about the project? Check the [project blog](BLOG.md).
 Some stuff I thought worth pointing out in the project (not everything):
 ```
 project-structure/
-├── Makefile         # for now, install dependencies, compose containers, run pipelines 
+├── Makefile         # venv, docker, raw/cleanse pipelines, tests, type checks
 ├── config/          # yaml for reusability (preparing for different environments maybe?)
 ├── db /              
 │   └── model        # curated (silver) model
@@ -29,14 +29,31 @@ project-structure/
 
 ### Running this bad boy
 
-- `make setup` - install dependencies
-- `make composeup` - spin up that postgres db!!!
-- `make composedown` - spin down that postgres db!!!
-- `make raw` - ingest files to the raw tables
-- `make resetall` - compose down, remove volume, move files back to LZ/pending
-- `make resetdb` - compose down, remove volume
-- `make resetlz` - move files back to LZ/pending
-- `make test` - run unit tests
+**Setup**
+
+- `make setup` — create `.venv` and install `requirements.txt`
+- `make setup-dev` — same as `setup`, but install `requirements-dev.txt` (for tests, mypy, etc.)
+- `make composeup` — spin up that postgres db!!!
+- `make composedown` — spin down that postgres db!!!
+
+**Pipelines**
+
+- `make raw` — run raw ingestion (`src/ingest_raw.py`)
+- `make cleanse` — run cleanse pipeline (`src/cleanse.py`)
+- `make run` — `composeup`, then `raw`, then `cleanse` (full stack in order)
+- `make rerun` — `resetall`, then same as `run` (clean DB + LZ, then full pipeline)
+
+**Reset local state**
+
+- `make resetall` — tear down DB volume, move archive and quarantine back into `landing-zone/pending`
+- `make resetdb` — tear down DB volume only
+- `make resetlz` — move archive and quarantine back into `landing-zone/pending`
+
+**Checks**
+
+- `make test` — `pytest -v`
+- `make mypy-raw` — `mypy` on `src/ingest_raw.py`
+- `make mypy-cleanse` — `mypy` on `src/cleanse.py`
 ---
 
 ## Version Updates
