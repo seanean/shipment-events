@@ -4,10 +4,10 @@ import pandas as pd
 from dataclasses import dataclass
 
 from db import get_engine, get_insert_statement, insert_row_builder
-from sqlalchemy import text
+from sqlalchemy import text, Engine
 from datetime import datetime, UTC
 from typing import Any, Literal, cast, Tuple
-from uuid import uuid5, NAMESPACE_DNS, UUID
+from uuid import uuid5, NAMESPACE_DNS
 from copy import deepcopy
 from config_util import get_config, resolve_config, _REPO_ROOT_PATH
 from app_logger import configure_logger # only required if running cleanse.py directly
@@ -51,22 +51,23 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
     config = resolve_config(loaded_config)
 
     # what run is this?
-    params.latest_run_id = get_latest_run_id(envt)
+    engine = get_engine() # one time
+    params.latest_run_id = get_latest_run_id(engine, envt)
     params.run_id = params.latest_run_id + 1
     logger.info(f"Latest run ID: {params.latest_run_id}, current run ID: {params.run_id}")
 
     # what raw data do we start from?
-    params.latest_raw_offset_id = get_latest_raw_offset_id(params)
+    params.latest_raw_offset_id = get_latest_raw_offset_id(engine, params)
     params.from_id_exclusive = params.latest_raw_offset_id
     
     # start getting batches. go until a batch is empty
     while True:
-        batch_df, params.rows_read = get_raw_batch(config.raw_target_table, envt, params, _BATCH_SIZE)
+        batch_df, params.rows_read = get_raw_batch(engine, config.raw_target_table, envt, params, _BATCH_SIZE)
         if batch_df.empty:
             logger.info(f'Batch is empty, exiting')
             params.status = 'success'
             params.to_id_inclusive = params.from_id_exclusive # latest success will still have same to_id
-            insert_pipeline_batch_run(params)
+            insert_pipeline_batch_run(engine, params)
             break
 
         # get latest per event ID. alternative approach would be based on event timestamp
@@ -90,8 +91,6 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
             for row in batch_dict_list
         ]
     
-        engine = get_engine()
-
         # do cln insert
         try:
             with engine.begin() as conn:
@@ -107,7 +106,7 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
                 params.status = 'failed'
                 params.error_message = str(e)
                 params.traceback_message = traceback.format_exc()
-                insert_pipeline_batch_run(params)
+                insert_pipeline_batch_run(engine, params)
             # if that failed too, that's not good
             except Exception as meta_e:
                 logger.error(f'Error inserting pipeline failed: {meta_e}')
@@ -119,7 +118,7 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
             params.status = 'success'
             params.error_message = None
             params.traceback_message = None
-            insert_pipeline_batch_run(params)
+            insert_pipeline_batch_run(engine, params)
         except Exception as meta_e:
             logger.error(f'Error inserting pipeline success: {meta_e}')
             raise meta_e
@@ -133,14 +132,32 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
         params.traceback_message = None
 
 
-def get_latest_raw_offset_id(iparams: CleansedParameters) -> int:
+def get_latest_run_id(engine: Engine, envt: str) -> int:
+    logger.info(f"Getting latest run_id for in {envt} environment")
+    run_qry = f"SELECT MAX(run_id) FROM meta.pipeline_run"
+    try:
+        with engine.begin() as conn:
+            logger.info(f"Retrieving latest run_id")
+            row = conn.execute(text(run_qry)).fetchone()
+            assert row is not None # because of fetchone() return type making mypy sad
+            result = row[0]
+            latest_run_id = result if result is not None else 0
+            logger.info(f"Latest run id: {latest_run_id}")
+            return latest_run_id
+    except Exception as e:
+        logger.error(f"Error getting latest run id: {e}")
+        raise e
+
+
+def get_latest_raw_offset_id(engine: Engine, iparams: CleansedParameters) -> int:
     logger.info(f"Getting latest raw offset id for {iparams.job_name}")
     offset_qry = f"SELECT MAX(to_id_inclusive) FROM meta.pipeline_run WHERE job_name = :job_name AND status = 'success'"
-    engine = get_engine()
     try:
         with engine.begin() as conn:
             logger.info(f"Retrieving latest raw offset id")
-            result = conn.execute(text(offset_qry), {"job_name": iparams.job_name}).fetchone()[0]
+            row = conn.execute(text(offset_qry), {"job_name": iparams.job_name}).fetchone()
+            assert row is not None # because of fetchone() return type making mypy sad
+            result = row[0]
             latest_offset_id = result if result is not None else 0
             logger.info(f"Latest raw offset id: {latest_offset_id}")
             return latest_offset_id
@@ -150,32 +167,17 @@ def get_latest_raw_offset_id(iparams: CleansedParameters) -> int:
             iparams.status = 'failed'
             iparams.error_message = str(e)
             iparams.traceback_message = traceback.format_exc()
-            insert_pipeline_batch_run(iparams)
+            insert_pipeline_batch_run(engine, iparams)
         except Exception as meta_e:
             logger.error(f'Error inserting pipeline failed: {meta_e}')
             raise meta_e from e
         raise e
 
-def get_latest_run_id(envt: str) -> int:
-    logger.info(f"Getting latest run_id for in {envt} environment")
-    run_qry = f"SELECT MAX(run_id) FROM meta.pipeline_run"
-    engine = get_engine()
-    try:
-        with engine.begin() as conn:
-            logger.info(f"Retrieving latest run_id")
-            result = conn.execute(text(run_qry)).fetchone()[0]
-            latest_run_id = result if result is not None else 0
-            logger.info(f"Latest run id: {latest_run_id}")
-            return latest_run_id
-    except Exception as e:
-        logger.error(f"Error getting latest run id: {e}")
-        raise e
-
-def get_raw_batch(target_table: str, envt: str, iparams: CleansedParameters, batch_size: int) -> Tuple[pd.DataFrame, int]:
+def get_raw_batch(engine: Engine, target_table: str, envt: str, 
+                  iparams: CleansedParameters, batch_size: int) -> Tuple[pd.DataFrame, int]:
     offset_id = iparams.from_id_exclusive
     logger.info(f"Getting raw batch from {target_table} in {envt} environment from {offset_id} to {offset_id + batch_size}")
     batch_qry = f'SELECT * FROM {target_table} WHERE offset_id > :offset_id LIMIT :batch_size'
-    engine = get_engine()
     try:
         with engine.begin() as conn:
             result = conn.execute(text(batch_qry), {"offset_id": offset_id, "batch_size": batch_size})
@@ -189,7 +191,7 @@ def get_raw_batch(target_table: str, envt: str, iparams: CleansedParameters, bat
             iparams.status = 'failed'
             iparams.error_message = str(e)
             iparams.traceback_message = traceback.format_exc()
-            insert_pipeline_batch_run(iparams)
+            insert_pipeline_batch_run(engine, iparams)
         except Exception as meta_e:
             logger.error(f'Error inserting pipeline failed: {meta_e}')
             raise meta_e from e
@@ -226,7 +228,7 @@ def add_shipment_products_uuids(payload_cln: dict[str, Any]) -> dict[str, Any]:
 
     return payload_cln
 
-def insert_pipeline_batch_run(iparams: CleansedParameters):
+def insert_pipeline_batch_run(engine: Engine, iparams: CleansedParameters):
     insert_qry = """INSERT INTO meta.pipeline_run (
                         run_id, batch_id, 
                         job_name, status,
@@ -243,7 +245,6 @@ def insert_pipeline_batch_run(iparams: CleansedParameters):
                         :to_id_inclusive, :rows_read,
                         :rows_written, :error_message,
                         :traceback_message, NOW())"""
-    engine = get_engine()
     with engine.begin() as conn:
         conn.execute(text(insert_qry), {"run_id": iparams.run_id, "batch_id": iparams.batch_id,
                                         "job_name": iparams.job_name, "status": iparams.status,

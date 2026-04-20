@@ -1,7 +1,7 @@
 from copy import deepcopy
+from sqlalchemy import create_engine,text
 
 import pandas as pd
-import pytest
 
 from cleanse import (
     CleansedParameters,
@@ -10,6 +10,9 @@ from cleanse import (
     add_uuids,
     build_uuid,
     merge_df,
+    get_latest_run_id,
+    get_latest_raw_offset_id,
+    get_raw_batch
 )
 
 def test_build_uuid_is_deterministic() -> None:
@@ -74,3 +77,39 @@ def test_add_uuids_dispatches_and_leaves_input_untouched() -> None:
     assert payload_cln != before_changes
     assert "shipment_uuid" not in status_payload["event_data"]
     assert "shipment_uuid" in payload_cln["event_data"]
+
+def test_get_latest_run_id() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(text("ATTACH DATABASE ':memory:' AS meta"))
+        conn.execute(text("CREATE TABLE meta.pipeline_run (run_id INTEGER)"))
+        conn.execute(text("INSERT INTO meta.pipeline_run (run_id) VALUES (1), (5)"))
+    assert get_latest_run_id(engine, "dev") == 5
+
+def test_get_latest_raw_offset_id_success() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(text("ATTACH DATABASE ':memory:' AS meta"))
+        conn.execute(text("CREATE TABLE meta.pipeline_run (to_id_inclusive INTEGER, job_name TEXT, status TEXT)"))
+        conn.execute(text("""INSERT INTO meta.pipeline_run
+                                (to_id_inclusive, job_name, status)
+                            VALUES
+                                (2, 'bob', 'success')
+                                , (3, 'bob', 'failed')
+                                , (5, 'job', 'success')"""))
+    
+    params = CleansedParameters(job_name='bob')
+    assert get_latest_raw_offset_id(engine, params) == 2
+
+
+def test_get_raw_batch_returns_df_and_rows() -> None:
+    engine = create_engine("sqlite+pysqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(text("ATTACH DATABASE ':memory:' AS raw"))
+        conn.execute(text("CREATE TABLE raw.shipment_status (offset_id INTEGER, event_id TEXT)"))
+        conn.execute(text("""INSERT INTO raw.shipment_status (offset_id, event_id)
+                             VALUES (1, 'e1'), (2, 'e2'), (4, 'e3')"""))
+    params = CleansedParameters(from_id_exclusive=1)
+    df, row_count = get_raw_batch(engine, "raw.shipment_status", "dev", params, batch_size=2)
+    assert isinstance(df, pd.DataFrame)
+    assert row_count == 2

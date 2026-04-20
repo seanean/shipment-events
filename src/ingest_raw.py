@@ -6,8 +6,7 @@ import json
 from pathlib import Path
 from jsonschema import Draft202012Validator, ValidationError, SchemaError
 from db import get_engine, get_insert_statement, insert_row_builder
-from sqlalchemy import text
-from datetime import datetime, UTC
+from sqlalchemy import text, Engine
 import traceback
 from typing import Any, Literal
 from config_util import get_config, resolve_config, _REPO_ROOT_PATH
@@ -41,12 +40,13 @@ def ingest_raw(data: Literal["shipment_status", "shipment_products"],
 
             pending_file = get_file(pending_filepath)
             events_processed += 1
+            engine = get_engine()
 
             try:
                 validate_file(pending_file, validator)
             except ValidationError as e:
                 # flow for invalid data
-                insert_to_table(config.quarantine_insert_sql_path, config.quarantine_target_table, pending_file,
+                insert_to_table(engine, config.quarantine_insert_sql_path, config.quarantine_target_table, pending_file,
                                 pending_filepath, str(e), traceback.format_exc())
                 quarantine_folder = os.path.join(config.lz_quarantine_path, pending_dt_partition)
                 try:
@@ -54,19 +54,19 @@ def ingest_raw(data: Literal["shipment_status", "shipment_products"],
                     events_to_quarantine += 1
                 except Exception as e:
                     logger.error(f"Error moving file {filename} to quarantine folder: {e}", exc_info=True)
-                    rollback_insert(config.quarantine_target_table, pending_filepath)
+                    rollback_insert(engine, config.quarantine_target_table, pending_filepath)
                     events_rolled_back += 1
                 continue
 
             # flow for valid data
-            insert_to_table(config.raw_insert_sql_path, config.raw_target_table, pending_file, pending_filepath)
+            insert_to_table(engine, config.raw_insert_sql_path, config.raw_target_table, pending_file, pending_filepath)
             archive_folder = os.path.join(config.lz_archive_path, pending_dt_partition)
             try:
                 store_file(filename, pending_filepath, archive_folder)
                 events_to_raw += 1
             except Exception as e:
                 logger.error(f"Error moving file {filename} to archive folder: {e}", exc_info=True)
-                rollback_insert(config.raw_target_table, pending_filepath)
+                rollback_insert(engine, config.raw_target_table, pending_filepath)
                 events_rolled_back += 1
     
     logger.info(f"{data} events processed: {events_processed}")
@@ -118,7 +118,7 @@ def validate_file(file: dict[str, Any], validator: Draft202012Validator) -> None
         raise e
 
 
-def insert_to_table(insert_sql_path: Path, target_table: str, 
+def insert_to_table(engine: Engine, insert_sql_path: Path, target_table: str, 
                     file: dict[str, Any], source_filepath: str, error_message: str | None = None, 
                     traceback_message: str | None = None) -> None:
     logger.info(f"Inserting file into {target_table}")
@@ -127,7 +127,6 @@ def insert_to_table(insert_sql_path: Path, target_table: str,
     logger.info(f"Insert row builder successful")
     logger.debug(f"Insert row: {insert_row}")
 
-    engine = get_engine()
     logger.info(f"Engine retrieved successfully")
     logger.debug(f"Engine: {engine}")
 
@@ -150,10 +149,9 @@ def store_file(filename: str, source_filepath: str, target_folder: str) -> None:
     shutil.move(source_filepath, destination_filepath)
     logger.info(f"File {filename} moved successfully to {destination_filepath}")
 
-def rollback_insert(target_table: str, source_filepath: str) -> None:
+def rollback_insert(engine: Engine, target_table: str, source_filepath: str) -> None:
     logger.info(f"Rolling back insert for {target_table}")
     delete_qry = f"DELETE FROM {target_table} WHERE meta_source_file_path = :meta_source_file_path"
-    engine = get_engine()
     with engine.begin() as conn:
         logger.info(f"Executing delete query")
         conn.execute(text(delete_qry), {"meta_source_file_path": source_filepath})

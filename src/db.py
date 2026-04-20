@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, Engine
 from dotenv import load_dotenv
 import os
 from pathlib import Path
@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 _engine = None
 # Singleton engine, so you always get the same one
-def get_engine():
+def get_engine() -> Engine:
     global _engine
     if _engine is None:
         load_dotenv()
