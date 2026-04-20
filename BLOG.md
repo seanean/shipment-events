@@ -217,6 +217,7 @@ Researched:
 - passing around a million variables was not very fun so i made a dataclass. much nicer experience.
 - testing added
 - made logging a little prettier
+- reworked get_engine so it's called and passed to support unit testing
 
 ### Learned
 
@@ -229,3 +230,4 @@ Researched:
 | Fetch Strategy | 1. a [`server-side cursor`](https://www.postgresql.org/docs/current/plpgsql-cursors.html) - `Rather than executing a whole query at once, it is possible to set up a cursor that encapsulates the query, and then read the query result a few rows at a time. One reason for doing this is to avoid memory overrun when the result contains a large number of rows.` It makes sense, but there are details about behavior of the connection / transaction that I'd have to figure out. Might prefer option 2.|
 | Fetch Strategy | 2. `batch querying` - linked to pipeline state. Can batch by a date or by a row ID. can fine-tune batching to the size of the data which is nice (wide table 5 rows, narrow table 50 rows).  |
 | Event merging | To some degree you can rely on Postgres' merge on key logic. However, if you're going to bulk insert (like I will be) you'll need to avoid that a single batch contains >1 of the same event ID. Strategy will be a combination of both: merge in batch in Pandas, merge in table in DB. </br> </br> Another alternative could be to have a post-cleansing staging table that has everything, then I select a `distinct on event ID order by event timestamp desc` into the actual cleansing table. |
+| Unit testing DB functions | By passing in their engine dependency, I can test (some) DB functions in unit tests! sqlite yay. |
