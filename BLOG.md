@@ -42,7 +42,8 @@ In the readme I think I'll give updates on each phase of the project, but for no
 ### Don't forget
 
 - integration tests! (for later)
-- update model to use timestamptz
+- update model (in madalier) to use timestamptz
+- Apply raw schema to make querying from cleansed to curated consistent (i.e. provide null values when attributes aren't present.)
 
 ## How am I developing it?
 
@@ -179,24 +180,24 @@ Experimenting with caveman mode to see if I can use less tokens and learn faster
 
 ### Some Thoughts
 Things I'd like to do in cleansed:
-- Incrementally retrieve/process/load data
-    - pipeline history table
-    - batch retrieval based on offset_id
-    - cleansing in python
-    - merging within batch in python (prevent double keys in sql insert)
-    - batch insert (incl. merge) via executemany
-    - handle empty runs
-    - log aggregates
+- ✓ Incrementally retrieve/process/load data
+    - ✓ pipeline history table
+    - ✓ batch retrieval based on offset_id
+    - ✓ cleansing in python
+    - ✓ merging within batch in python (prevent double keys in sql insert)
+    - ✓ batch insert (incl. merge) via executemany
+    - ✓ handle empty runs
+    - ✓ log aggregates
 - ✓ Update raw DDLs (add indexes for batching)
 - ✓ Create cleansed DDLs (w/ event id index)
 - ✓ Create pipeline history DDL
 - ✓ Merge on event ID
 - ✓ Generate UUIDs
-- Cast to data types
-- Drop unneeded fields
-- Add default values
+- ~~Cast to data types~~ wasn't needed.
+- ✓ Drop unneeded fields
+- For later: Add default values
     - probably should map events to raw schema so that missing optional fields are created with default values?
-- Log aggregates
+- ✓ Log aggregates
 
 Researched:
 - how do I handle merging with incremental stuff?
@@ -231,3 +232,30 @@ Researched:
 | Fetch Strategy | 2. `batch querying` - linked to pipeline state. Can batch by a date or by a row ID. can fine-tune batching to the size of the data which is nice (wide table 5 rows, narrow table 50 rows).  |
 | Event merging | To some degree you can rely on Postgres' merge on key logic. However, if you're going to bulk insert (like I will be) you'll need to avoid that a single batch contains >1 of the same event ID. Strategy will be a combination of both: merge in batch in Pandas, merge in table in DB. </br> </br> Another alternative could be to have a post-cleansing staging table that has everything, then I select a `distinct on event ID order by event timestamp desc` into the actual cleansing table. |
 | Unit testing DB functions | By passing in their engine dependency, I can test (some) DB functions in unit tests! sqlite yay. |
+
+
+## Phase 4 - Curated
+
+
+### Some thoughts
+
+It's time! We're almost there!!!
+
+First, some upgrades to phase 3 to give better traceability across layers:
+- cleansed meta_source_file_path -> add field: meta_source_file_paths should concatenate file paths on update instead of replacing.
+- raw_offset_id -> add field: raw_offset_id_list should concatenate raw_offset_ids that went into this cleansed record
+    - change DDLs
+    - change inserts
+
+Second, workflow for curated:
+- rework config to have cur tables
+- get config
+- resolve it
+- get curated tables
+- get curated sqls
+- write insert statements
+- figure out how to do incremental (again, based on cln offset_id?), pipeline_run inserts
+- seems like the logic for curated will be VERY similar to cleansed
+
+other:
+- move config test to test_config_util.py
