@@ -3,16 +3,20 @@ from sqlalchemy import create_engine,text
 
 import pandas as pd
 
+
+from db import (
+    get_latest_run_id, 
+    get_latest_raw_offset_id, 
+    get_batch, 
+    BatchParameters
+)
+
 from cleanse import (
-    CleansedParameters,
     add_shipment_products_uuids,
     add_shipment_status_uuids,
     add_uuids,
     build_uuid,
-    merge_df,
-    get_latest_run_id,
-    get_latest_raw_offset_id,
-    get_raw_batch
+    merge_df
 )
 
 def test_build_uuid_is_deterministic() -> None:
@@ -98,18 +102,18 @@ def test_get_latest_raw_offset_id_success() -> None:
                                 , (3, 'bob', 'failed')
                                 , (5, 'job', 'success')"""))
     
-    params = CleansedParameters(job_name='bob')
+    params = BatchParameters(job_name='bob')
     assert get_latest_raw_offset_id(engine, params) == 2
 
 
-def test_get_raw_batch_returns_df_and_rows() -> None:
+def test_get_batch_returns_df_and_rows() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     with engine.begin() as conn:
         conn.execute(text("ATTACH DATABASE ':memory:' AS raw"))
         conn.execute(text("CREATE TABLE raw.shipment_status (offset_id INTEGER, event_id TEXT)"))
         conn.execute(text("""INSERT INTO raw.shipment_status (offset_id, event_id)
                              VALUES (1, 'e1'), (2, 'e2'), (4, 'e3')"""))
-    params = CleansedParameters(from_id_exclusive=1)
-    df, row_count = get_raw_batch(engine, "raw.shipment_status", "dev", params, batch_size=2)
+    params = BatchParameters(from_id_exclusive=1)
+    df, row_count = get_batch(engine, "raw.shipment_status", "dev", params, batch_size=2)
     assert isinstance(df, pd.DataFrame)
     assert row_count == 2

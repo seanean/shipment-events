@@ -51,14 +51,8 @@ test:
 	fi
 	.venv/bin/pytest -v
 
-mypy-raw:
-	.venv/bin/mypy src/ingest_raw.py
-
-mypy-cleanse:
-	.venv/bin/mypy src/cleanse.py
-
-mypy-config:
-	.venv/bin/mypy src/config_util.py
+mypy:
+	.venv/bin/mypy src
 
 run:
 	make composeup && make raw && make cleanse

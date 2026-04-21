@@ -1,11 +1,30 @@
-from sqlalchemy import create_engine, Engine
+from sqlalchemy import create_engine, Engine, text
 from dotenv import load_dotenv
 import os
 from pathlib import Path
 import logging
 from datetime import datetime
 from psycopg.types.json import Jsonb
-from typing import Any
+from typing import Any, Tuple
+from dataclasses import dataclass
+import traceback
+import pandas as pd
+
+@dataclass(frozen=False)
+class BatchParameters:
+    latest_run_id: int | None = None
+    latest_raw_offset_id: int | None = 0
+    run_id: int | None = None
+    batch_id: int = 1
+    job_name: str | None = None
+    status: str | None = None
+    started_at: datetime | None = None
+    from_id_exclusive: int = 0
+    to_id_inclusive: int = 0
+    rows_read: int = 0
+    rows_written: int = 0
+    error_message: str | None = None
+    traceback_message: str | None = None
 
 
 logger = logging.getLogger(__name__)
@@ -81,3 +100,95 @@ def insert_row_builder(target_table: str, content: dict[str, Any],
         case _:
             logger.error(f"Whatcha talkin' bout Willis? Unknown table: {target_table}")
             raise ValueError(f"Whatcha talkin' bout Willis? Unknown table: {target_table}")
+
+def get_latest_run_id(engine: Engine, envt: str) -> int:
+    logger.info(f"Getting latest run_id for in {envt} environment")
+    run_qry = f"SELECT MAX(run_id) FROM meta.pipeline_run"
+    try:
+        with engine.begin() as conn:
+            logger.info(f"Retrieving latest run_id")
+            row = conn.execute(text(run_qry)).fetchone()
+            assert row is not None # because of fetchone() return type making mypy sad
+            result = row[0]
+            latest_run_id = result if result is not None else 0
+            logger.info(f"Latest run id: {latest_run_id}")
+            return latest_run_id
+    except Exception as e:
+        logger.error(f"Error getting latest run id: {e}")
+        raise e
+
+def get_latest_raw_offset_id(engine: Engine, iparams: BatchParameters) -> int:
+    logger.info(f"Getting latest raw offset id for {iparams.job_name}")
+    offset_qry = f"SELECT MAX(to_id_inclusive) FROM meta.pipeline_run WHERE job_name = :job_name AND status = 'success'"
+    try:
+        with engine.begin() as conn:
+            logger.info(f"Retrieving latest raw offset id")
+            row = conn.execute(text(offset_qry), {"job_name": iparams.job_name}).fetchone()
+            assert row is not None # because of fetchone() return type making mypy sad
+            result = row[0]
+            latest_offset_id = result if result is not None else 0
+            logger.info(f"Latest raw offset id: {latest_offset_id}")
+            return latest_offset_id
+    except Exception as e:
+        logger.error(f"Error getting latest raw offset id: {e}")
+        try:
+            iparams.status = 'failed'
+            iparams.error_message = str(e)
+            iparams.traceback_message = traceback.format_exc()
+            insert_pipeline_batch_run(engine, iparams)
+        except Exception as meta_e:
+            logger.error(f'Error inserting pipeline failed: {meta_e}')
+            raise meta_e from e
+        raise e
+
+
+def insert_pipeline_batch_run(engine: Engine, iparams: BatchParameters):
+    insert_qry = """INSERT INTO meta.pipeline_run (
+                        run_id, batch_id, 
+                        job_name, status,
+                        started_at, finished_at,
+                        starting_from_id_exclusive, from_id_exclusive,
+                        to_id_inclusive, rows_read,
+                        rows_written, error_message,
+                        traceback_message, meta_insert_timestamp)
+                    VALUES (
+                        :run_id, :batch_id,
+                        :job_name, :status,
+                        :started_at, NOW(),
+                        :starting_from_id_exclusive, :from_id_exclusive,
+                        :to_id_inclusive, :rows_read,
+                        :rows_written, :error_message,
+                        :traceback_message, NOW())"""
+    with engine.begin() as conn:
+        conn.execute(text(insert_qry), {"run_id": iparams.run_id, "batch_id": iparams.batch_id,
+                                        "job_name": iparams.job_name, "status": iparams.status,
+                                        "started_at": iparams.started_at,
+                                        "starting_from_id_exclusive": iparams.latest_raw_offset_id, "from_id_exclusive": iparams.from_id_exclusive,
+                                        "to_id_inclusive": iparams.to_id_inclusive, "rows_read": iparams.rows_read,
+                                        "rows_written": iparams.rows_written, "error_message": iparams.error_message,
+                                        "traceback_message": iparams.traceback_message})
+
+
+def get_batch(engine: Engine, target_table: str, envt: str, 
+                  iparams: BatchParameters, batch_size: int) -> Tuple[pd.DataFrame, int]:
+    offset_id = iparams.from_id_exclusive
+    logger.info(f"Getting batch from {target_table} in {envt} environment from {offset_id} to {offset_id + batch_size}")
+    batch_qry = f'SELECT * FROM {target_table} WHERE offset_id > :offset_id LIMIT :batch_size'
+    try:
+        with engine.begin() as conn:
+            result = conn.execute(text(batch_qry), {"offset_id": offset_id, "batch_size": batch_size})
+            rows = result.fetchall()
+            columns = result.keys()
+            df = pd.DataFrame(rows, columns=columns)
+            return df, df.shape[0]
+    except Exception as e:
+        logger.error(f"Error getting batch: {e}")
+        try:
+            iparams.status = 'failed'
+            iparams.error_message = str(e)
+            iparams.traceback_message = traceback.format_exc()
+            insert_pipeline_batch_run(engine, iparams)
+        except Exception as meta_e:
+            logger.error(f'Error inserting pipeline failed: {meta_e}')
+            raise meta_e from e
+        raise e

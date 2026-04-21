@@ -118,7 +118,11 @@ def test_insert_row_builder_returns_valid_dict(target_table: str) -> None:
     # for each key in expected_result, check if result[key] == expected_result[key]
     for key in expected_result:
         if key == "payload":
-            assert result[key].obj == expected_result[key].obj
+            a = result[key]
+            b = expected_result[key]
+            assert isinstance(a, Jsonb)
+            assert isinstance(b, Jsonb)
+            assert a.obj == b.obj
         else:
             assert result[key] == expected_result[key]
 
@@ -146,7 +150,7 @@ def test_get_schema_returns_dict(tmp_path: Path) -> None:
     assert isinstance(result, dict)
 
 def test_get_file_returns_dict(tmp_path: Path) -> None:
-    file_path = tmp_path / "file.json"
+    file_path = str(tmp_path / "file.json")
     file = {"type": "string"}
     with open(file_path, "w") as f:
         json.dump(file, f)
@@ -172,8 +176,7 @@ def test_store_file_removes_original_creates_target(tmp_path: Path) -> None:
     with open(source_filepath, "w") as f:
         f.write("banana")
 
-    result = store_file(filename, source_filepath, target_folder)
-    assert result is None
+    store_file(filename, str(source_filepath), str(target_folder))
     assert not source_filepath.exists()
     assert target_filepath.exists()
 
@@ -190,7 +193,6 @@ def test_cleanup_pending_lz_removes_empty_folders(tmp_path: Path) -> None:
     with open(non_empty_child_folder / "test.json", "w") as f:
         f.write("banana")
 
-    result = cleanup_pending_lz(pending_folder)
-    assert result is None
+    cleanup_pending_lz(pending_folder)
     assert not empty_child_folder.exists()
     assert non_empty_child_folder.exists()

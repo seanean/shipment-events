@@ -1,10 +1,11 @@
 from config_util import get_config, resolve_config, _REPO_ROOT_PATH
 from pathlib import Path
 import json
+from typing import Any
 
 # resolve_config tests
 def test_resolve_config() -> None:
-    loaded_config = {
+    loaded_config: dict[str, Any] = {
         'lz_pending_path': 'landing-zone/pending/shipment_status',
         'lz_archive_path': 'landing-zone/archive/shipment_status',
         'lz_quarantine_path': 'landing-zone/quarantine/shipment_status',
@@ -46,7 +47,7 @@ def test_resolve_config() -> None:
     assert all(isinstance(table['table'], str) for table in result.curated_tables)
     assert all(isinstance(table['insert_sql_path'], Path) for table in result.curated_tables)
     # path checks
-    assert result.lz_pending_path == _REPO_ROOT_PATH.joinpath(loaded_config['lz_pending_path']   )
+    assert result.lz_pending_path == _REPO_ROOT_PATH.joinpath(loaded_config['lz_pending_path'])
     assert result.lz_archive_path == _REPO_ROOT_PATH.joinpath(loaded_config['lz_archive_path'])
     assert result.lz_quarantine_path == _REPO_ROOT_PATH.joinpath(loaded_config['lz_quarantine_path'])
     assert result.schema_path == _REPO_ROOT_PATH.joinpath(loaded_config['schema_path'])

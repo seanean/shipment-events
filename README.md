@@ -52,8 +52,7 @@ project-structure/
 **Checks**
 
 - `make test` — `pytest -v`
-- `make mypy-raw` — `mypy` on `src/ingest_raw.py`
-- `make mypy-cleanse` — `mypy` on `src/cleanse.py`
+- `make mypy` — `mypy` on `src`
 ---
 
 ## Version Updates
