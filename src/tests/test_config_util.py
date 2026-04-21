@@ -19,14 +19,15 @@ def test_resolve_config() -> None:
         'cln_db_schema': 'cln',
         'cln_table': 'shipment_status',
         'cln_insert_sql_path': 'db/sql/cln/cln_shipment_status_insert.sql',
+        'curated_db_schema': 'cur',
         'curated_tables': [
             {
-                'table': 'shipment_header',
-                'insert_sql_path': 'db/sql/cur/shipment_status__cur_shipment_header_insert.sql',
+                'cur_table': 'shipment_header',
+                'cur_insert_sql_path': 'db/sql/cur/shipment_status__cur_shipment_header_insert.sql',
             },
             {
-                'table': 'shipment_status',
-                'insert_sql_path': 'db/sql/cur/cur_shipment_status_insert.sql',
+                'cur_table': 'shipment_status',
+                'cur_insert_sql_path': 'db/sql/cur/cur_shipment_status_insert.sql',
             },
         ]
     }
@@ -44,8 +45,8 @@ def test_resolve_config() -> None:
     assert isinstance(result.cln_target_table, str)
     assert isinstance(result.curated_tables, list)
     assert all(isinstance(table, dict) for table in result.curated_tables)
-    assert all(isinstance(table['table'], str) for table in result.curated_tables)
-    assert all(isinstance(table['insert_sql_path'], Path) for table in result.curated_tables)
+    assert all(isinstance(table['cur_target_table'], str) for table in result.curated_tables)
+    assert all(isinstance(table['cur_insert_sql_path'], Path) for table in result.curated_tables)
     # path checks
     assert result.lz_pending_path == _REPO_ROOT_PATH.joinpath(loaded_config['lz_pending_path'])
     assert result.lz_archive_path == _REPO_ROOT_PATH.joinpath(loaded_config['lz_archive_path'])
@@ -60,8 +61,8 @@ def test_resolve_config() -> None:
     assert result.cln_target_table == f'{loaded_config['cln_db_schema']}.{loaded_config['cln_table']}'
     assert result.curated_tables == [
         {
-            'table': row['table'],
-            'insert_sql_path': _REPO_ROOT_PATH / row['insert_sql_path'],
+            'cur_target_table': f'{loaded_config['curated_db_schema']}.{row['cur_table']}',
+            'cur_insert_sql_path': _REPO_ROOT_PATH / row['cur_insert_sql_path'],
         }
         for row in loaded_config['curated_tables']
     ]

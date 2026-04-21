@@ -47,10 +47,10 @@ def resolve_config(loaded_config: dict[str, Any]) -> ResolvedConfig:
         # if at some point it's needed, we can also resolve the raw_table and raw_db_schema parameters
         curated_tables = [
             {
-                'table': table['table'],
-                'insert_sql_path': _REPO_ROOT_PATH / table['insert_sql_path']
+                'cur_target_table': f'{loaded_config['curated_db_schema']}.{cur_table['cur_table']}',
+                'cur_insert_sql_path': _REPO_ROOT_PATH / cur_table['cur_insert_sql_path']
             }
-            for table in loaded_config['curated_tables']
+            for cur_table in loaded_config['curated_tables']
         ]
     )
         
