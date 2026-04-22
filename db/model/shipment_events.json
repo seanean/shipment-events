@@ -43,7 +43,7 @@
                     "technical_name": "shipment_type"
                 },
                 {
-                    "attribute_id": "2df6a271-3911-4685-b164-f2c4dee705a1",
+                    "attribute_id": "a79b1e73-aed3-45ba-ba70-b6607bb567cd",
                     "business_name": "Meta Source Event Names",
                     "technical_name": "meta_source_event_names",
                     "data_type": "VARCHAR",
@@ -53,7 +53,7 @@
                     "mandatory": true
                 },
                 {
-                    "attribute_id": "05e7d615-f295-4fba-9228-b6945fabe642",
+                    "attribute_id": "8248d1fc-c995-4563-9ebb-f4c563bd1220",
                     "business_name": "Meta Source Event Identifier List",
                     "technical_name": "meta_source_event_id_lst",
                     "data_type": "VARCHAR",
@@ -63,7 +63,7 @@
                     "mandatory": true
                 },
                 {
-                    "attribute_id": "2ad187f7-e663-4fce-b4ce-a37cec9c431d",
+                    "attribute_id": "99d1b2be-6599-4a97-8ceb-9fd63639088a",
                     "business_name": "Meta Source File Path List",
                     "technical_name": "meta_source_file_path_lst",
                     "data_type": "VARCHAR",
@@ -73,23 +73,33 @@
                     "mandatory": true
                 },
                 {
-                    "attribute_id": "a5272cd4-cb8e-40be-8bc8-bbcb26b4bf52",
+                    "attribute_id": "cbb6e7d7-ec10-46bd-9f5b-59d903a90f66",
                     "business_name": "Meta Insert Timestamp",
                     "technical_name": "meta_insert_timestamp",
                     "data_type": "TIMESTAMPTZ",
-                    "attribute_order": 8,
+                    "attribute_order": 9,
                     "is_meta": true,
                     "key_type": null,
                     "mandatory": true
                 },
                 {
-                    "attribute_id": "dd7549fd-20c4-4b9a-93dc-0659bdc56d4d",
+                    "attribute_id": "bf347d01-910e-402f-978f-6161f39df634",
                     "business_name": "Meta Updated Timestamp",
                     "technical_name": "meta_updated_timestamp",
                     "data_type": "TIMESTAMPTZ",
-                    "attribute_order": 9,
+                    "attribute_order": 10,
                     "is_meta": true,
                     "key_type": null
+                },
+                {
+                    "attribute_id": "2975beb2-8cef-412d-b64c-69ba94ea92b7",
+                    "business_name": "Meta Root Business Key",
+                    "technical_name": "meta_root_business_key",
+                    "data_type": "VARCHAR",
+                    "attribute_order": 8,
+                    "is_meta": true,
+                    "key_type": null,
+                    "mandatory": true
                 }
             ],
             "business_name": "Shipment",
@@ -141,7 +151,7 @@
                     "technical_name": "product_qty"
                 },
                 {
-                    "attribute_id": "423fef7c-03ed-4745-be09-bad9ebfa37ff",
+                    "attribute_id": "06295300-2fc1-42b8-8dc9-d9fc6f6c062a",
                     "business_name": "Meta Source Event Names",
                     "technical_name": "meta_source_event_names",
                     "data_type": "VARCHAR",
@@ -151,7 +161,7 @@
                     "mandatory": true
                 },
                 {
-                    "attribute_id": "2a44699d-698a-43c8-b42c-80caf9e06d29",
+                    "attribute_id": "a0d65ac1-331a-4469-875b-57ab5dd97945",
                     "business_name": "Meta Source Event Identifier List",
                     "technical_name": "meta_source_event_id_lst",
                     "data_type": "VARCHAR",
@@ -161,7 +171,7 @@
                     "mandatory": true
                 },
                 {
-                    "attribute_id": "f700a011-dfc5-47d5-9ea2-6cd7c8550e65",
+                    "attribute_id": "8f4186ce-c3dc-40db-a1ec-81386a7f1890",
                     "business_name": "Meta Source File Path List",
                     "technical_name": "meta_source_file_path_lst",
                     "data_type": "VARCHAR",
@@ -171,23 +181,33 @@
                     "mandatory": true
                 },
                 {
-                    "attribute_id": "98cd0146-7f7f-4274-bdc7-23fdfe5017d3",
+                    "attribute_id": "b6b6a575-e24d-473f-8255-01119c9bb497",
                     "business_name": "Meta Insert Timestamp",
                     "technical_name": "meta_insert_timestamp",
                     "data_type": "TIMESTAMPTZ",
-                    "attribute_order": 8,
+                    "attribute_order": 9,
                     "is_meta": true,
                     "key_type": null,
                     "mandatory": true
                 },
                 {
-                    "attribute_id": "f08e2321-27d5-42ca-8a68-d445cfd6ae07",
+                    "attribute_id": "b298d80d-297a-4b65-9bfe-cf333e0427c7",
                     "business_name": "Meta Updated Timestamp",
                     "technical_name": "meta_updated_timestamp",
                     "data_type": "TIMESTAMPTZ",
-                    "attribute_order": 9,
+                    "attribute_order": 10,
                     "is_meta": true,
                     "key_type": null
+                },
+                {
+                    "attribute_id": "60d0bb6b-8e54-4a7c-83ca-3733f661e482",
+                    "business_name": "Meta Root Business Key",
+                    "technical_name": "meta_root_business_key",
+                    "data_type": "VARCHAR",
+                    "attribute_order": 8,
+                    "is_meta": true,
+                    "key_type": null,
+                    "mandatory": true
                 }
             ],
             "business_name": "Shipment Product",
@@ -239,7 +259,7 @@
                     "technical_name": "shipment_status_tmst"
                 },
                 {
-                    "attribute_id": "d0f2c6c0-6440-4f9e-af6f-e612fce44ead",
+                    "attribute_id": "6f032daf-5219-4a72-a5cc-535d95af8a0e",
                     "business_name": "Meta Source Event Names",
                     "technical_name": "meta_source_event_names",
                     "data_type": "VARCHAR",
@@ -249,7 +269,7 @@
                     "mandatory": true
                 },
                 {
-                    "attribute_id": "cedbae87-b0c4-44e3-8a47-059ba6a88691",
+                    "attribute_id": "3ca0a3cc-68f1-4a43-87af-c76f8b4699ca",
                     "business_name": "Meta Source Event Identifier List",
                     "technical_name": "meta_source_event_id_lst",
                     "data_type": "VARCHAR",
@@ -259,7 +279,7 @@
                     "mandatory": true
                 },
                 {
-                    "attribute_id": "545125fa-3b73-40b3-8c90-df167cfcad21",
+                    "attribute_id": "6dc497c4-c9ff-4638-b1df-4a1eca012af5",
                     "business_name": "Meta Source File Path List",
                     "technical_name": "meta_source_file_path_lst",
                     "data_type": "VARCHAR",
@@ -269,23 +289,33 @@
                     "mandatory": true
                 },
                 {
-                    "attribute_id": "1cd7aa1f-4f2a-4f99-bf75-6858f996b360",
+                    "attribute_id": "af9a2c1f-d492-4f74-a93b-dec36e9ac834",
                     "business_name": "Meta Insert Timestamp",
                     "technical_name": "meta_insert_timestamp",
                     "data_type": "TIMESTAMPTZ",
-                    "attribute_order": 8,
+                    "attribute_order": 9,
                     "is_meta": true,
                     "key_type": null,
                     "mandatory": true
                 },
                 {
-                    "attribute_id": "740a14eb-b862-48d2-b6cd-a94830c786ac",
+                    "attribute_id": "a77fdd15-7b25-42c9-a269-98254196fb04",
                     "business_name": "Meta Updated Timestamp",
                     "technical_name": "meta_updated_timestamp",
                     "data_type": "TIMESTAMPTZ",
-                    "attribute_order": 9,
+                    "attribute_order": 10,
                     "is_meta": true,
                     "key_type": null
+                },
+                {
+                    "attribute_id": "f3694aed-4891-4c5a-bf9d-eece0b69134d",
+                    "business_name": "Meta Root Business Key",
+                    "technical_name": "meta_root_business_key",
+                    "data_type": "VARCHAR",
+                    "attribute_order": 8,
+                    "is_meta": true,
+                    "key_type": null,
+                    "mandatory": true
                 }
             ],
             "business_name": "Shipment Status",
@@ -299,10 +329,10 @@
         "created": "2026-04-09T12:36:24.760936Z",
         "created_by": "Sean Murphy",
         "description": "Curated, silver-layer model for shipment events.",
-        "modified": "2026-04-20T16:48:04.927942Z",
+        "modified": "2026-04-22T09:41:18.507023Z",
         "name": "Shipment Events",
         "technical_name": "shipment_events",
-        "version": "0.0.3"
+        "version": "0.0.4"
     },
     "meta_fields_enabled": true,
     "relationships": [

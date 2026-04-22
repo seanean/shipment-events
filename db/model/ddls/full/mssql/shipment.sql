@@ -6,6 +6,7 @@ CREATE TABLE [shipment] (
     [meta_source_event_names] NVARCHAR(MAX) NOT NULL,
     [meta_source_event_id_lst] NVARCHAR(MAX) NOT NULL,
     [meta_source_file_path_lst] NVARCHAR(MAX) NOT NULL,
+    [meta_root_business_key] NVARCHAR(MAX) NOT NULL,
     [meta_insert_timestamp] DATETIMEOFFSET NOT NULL,
     [meta_updated_timestamp] DATETIMEOFFSET,
     PRIMARY KEY ([shipment_uuid])

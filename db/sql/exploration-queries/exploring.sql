@@ -10,6 +10,7 @@ select * from meta.pipeline_run;
 
 select concat_ws(',',1);
 
+
 SELECT table_schema, table_name
 FROM information_schema.tables
 where table_schema in ('cur', 'raw', 'quarantine', 'cln');
