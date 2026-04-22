@@ -38,7 +38,7 @@
         },
         {
             "business_name": "Meta Updated Timestamp",
-            "technical_name": "meta_updated_timestamp",
+            "technical_name": "meta_update_timestamp",
             "data_type": "TIMESTAMPTZ"
         }
     ]

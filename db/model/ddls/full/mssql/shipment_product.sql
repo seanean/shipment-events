@@ -9,6 +9,6 @@ CREATE TABLE [shipment_product] (
     [meta_source_file_path_lst] NVARCHAR(MAX) NOT NULL,
     [meta_root_business_key] NVARCHAR(MAX) NOT NULL,
     [meta_insert_timestamp] DATETIMEOFFSET NOT NULL,
-    [meta_updated_timestamp] DATETIMEOFFSET,
+    [meta_update_timestamp] DATETIMEOFFSET,
     PRIMARY KEY ([shipment_product_uuid])
 );

@@ -9,5 +9,5 @@ CREATE TABLE shipment (
     meta_source_file_path_lst TEXT NOT NULL,
     meta_root_business_key TEXT NOT NULL,
     meta_insert_timestamp TEXT NOT NULL,
-    meta_updated_timestamp TEXT
+    meta_update_timestamp TEXT
 );

@@ -9,6 +9,6 @@ CREATE TABLE `shipment_product` (
     `meta_source_file_path_lst` TEXT NOT NULL,
     `meta_root_business_key` TEXT NOT NULL,
     `meta_insert_timestamp` TIMESTAMP NOT NULL,
-    `meta_updated_timestamp` TIMESTAMP,
+    `meta_update_timestamp` TIMESTAMP,
     PRIMARY KEY (`shipment_product_uuid`)
 );

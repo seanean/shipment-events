@@ -95,7 +95,7 @@
                 {
                     "attribute_id": "f4532f7b-7797-4383-917f-e85e80200873",
                     "business_name": "Meta Updated Timestamp",
-                    "technical_name": "meta_updated_timestamp",
+                    "technical_name": "meta_update_timestamp",
                     "data_type": "TIMESTAMPTZ",
                     "attribute_order": 11,
                     "is_meta": true,
@@ -213,7 +213,7 @@
                 {
                     "attribute_id": "777838cf-ebbb-4991-a40d-b954c9582708",
                     "business_name": "Meta Updated Timestamp",
-                    "technical_name": "meta_updated_timestamp",
+                    "technical_name": "meta_update_timestamp",
                     "data_type": "TIMESTAMPTZ",
                     "attribute_order": 11,
                     "is_meta": true,
@@ -331,7 +331,7 @@
                 {
                     "attribute_id": "75678b25-23fc-44bd-a774-914918420f17",
                     "business_name": "Meta Updated Timestamp",
-                    "technical_name": "meta_updated_timestamp",
+                    "technical_name": "meta_update_timestamp",
                     "data_type": "TIMESTAMPTZ",
                     "attribute_order": 11,
                     "is_meta": true,
