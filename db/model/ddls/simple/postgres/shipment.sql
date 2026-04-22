@@ -4,6 +4,7 @@ CREATE TABLE shipment (
     shipment_technical_id TEXT NOT NULL,
     shipment_type TEXT NOT NULL,
     meta_source_event_names TEXT NOT NULL,
+    meta_source_latest_event_id TEXT NOT NULL,
     meta_source_event_id_lst TEXT NOT NULL,
     meta_source_file_path_lst TEXT NOT NULL,
     meta_root_business_key TEXT NOT NULL,

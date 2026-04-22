@@ -4,6 +4,7 @@ table,Shipment,shipment,,Shipment Business Identifier,shipment_business_id,true,
 table,Shipment,shipment,,Shipment Technical Identifier,shipment_technical_id,true,VARCHAR,,,,,,
 table,Shipment,shipment,,Shipment Type,shipment_type,true,VARCHAR,,,,,,
 table,Shipment,shipment,,Meta Source Event Names,meta_source_event_names,true,VARCHAR,,,,,,true
+table,Shipment,shipment,,Meta Source Latest Event Identifier,meta_source_latest_event_id,true,VARCHAR,,,,,,true
 table,Shipment,shipment,,Meta Source Event Identifier List,meta_source_event_id_lst,true,VARCHAR,,,,,,true
 table,Shipment,shipment,,Meta Source File Path List,meta_source_file_path_lst,true,VARCHAR,,,,,,true
 table,Shipment,shipment,,Meta Root Business Key,meta_root_business_key,true,VARCHAR,,,,,,true
@@ -14,6 +15,7 @@ table,Shipment Product,shipment_product,,Shipment Universal Unique Identifier,sh
 table,Shipment Product,shipment_product,,Product Identifier,product_id,true,VARCHAR,,,,,,
 table,Shipment Product,shipment_product,,Product Quantity,product_qty,true,INTEGER,,,,,,
 table,Shipment Product,shipment_product,,Meta Source Event Names,meta_source_event_names,true,VARCHAR,,,,,,true
+table,Shipment Product,shipment_product,,Meta Source Latest Event Identifier,meta_source_latest_event_id,true,VARCHAR,,,,,,true
 table,Shipment Product,shipment_product,,Meta Source Event Identifier List,meta_source_event_id_lst,true,VARCHAR,,,,,,true
 table,Shipment Product,shipment_product,,Meta Source File Path List,meta_source_file_path_lst,true,VARCHAR,,,,,,true
 table,Shipment Product,shipment_product,,Meta Root Business Key,meta_root_business_key,true,VARCHAR,,,,,,true
@@ -24,6 +26,7 @@ table,Shipment Status,shipment_status,,Shipment Universal Unique Identifier,ship
 table,Shipment Status,shipment_status,,Shipment Status,shipment_status,true,VARCHAR,,,,,,
 table,Shipment Status,shipment_status,,Shipment Status Timestamp,shipment_status_tmst,true,TIMESTAMPTZ,,,,,,
 table,Shipment Status,shipment_status,,Meta Source Event Names,meta_source_event_names,true,VARCHAR,,,,,,true
+table,Shipment Status,shipment_status,,Meta Source Latest Event Identifier,meta_source_latest_event_id,true,VARCHAR,,,,,,true
 table,Shipment Status,shipment_status,,Meta Source Event Identifier List,meta_source_event_id_lst,true,VARCHAR,,,,,,true
 table,Shipment Status,shipment_status,,Meta Source File Path List,meta_source_file_path_lst,true,VARCHAR,,,,,,true
 table,Shipment Status,shipment_status,,Meta Root Business Key,meta_root_business_key,true,VARCHAR,,,,,,true

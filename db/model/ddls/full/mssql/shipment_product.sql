@@ -4,6 +4,7 @@ CREATE TABLE [shipment_product] (
     [product_id] NVARCHAR(MAX) NOT NULL,
     [product_qty] INT NOT NULL,
     [meta_source_event_names] NVARCHAR(MAX) NOT NULL,
+    [meta_source_latest_event_id] NVARCHAR(MAX) NOT NULL,
     [meta_source_event_id_lst] NVARCHAR(MAX) NOT NULL,
     [meta_source_file_path_lst] NVARCHAR(MAX) NOT NULL,
     [meta_root_business_key] NVARCHAR(MAX) NOT NULL,
