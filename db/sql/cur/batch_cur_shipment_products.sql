@@ -138,7 +138,7 @@ ON CONFLICT (shipment_uuid) DO UPDATE SET
     , meta_update_timestamp = NOW();
 
 -- only for review:
-SELECT * FROM CUR.shipment;
+-- SELECT * FROM CUR.shipment;
 
 -- tmp_sp_shipment_product: to upsert into cur.shipment_product
 WITH sb_product AS (
@@ -217,7 +217,7 @@ ON CONFLICT (shipment_product_uuid) DO UPDATE SET
     , meta_update_timestamp = NOW();
 
 -- only for review:
-SELECT * FROM cur.shipment_product;
+-- SELECT * FROM cur.shipment_product;
 
 -- Orphan handling
 DELETE FROM cur.shipment_product
