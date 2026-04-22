@@ -42,8 +42,8 @@ In the readme I think I'll give updates on each phase of the project, but for no
 ### Don't forget
 
 - integration tests! (for later)
-- update model (in madalier) to use timestamptz
-- Apply raw schema to make querying from cleansed to curated consistent (i.e. provide null values when attributes aren't present.)
+- Apply raw schema to make querying from cleansed to curated consistent (i.e. provide null values when attributes aren't present.) ??
+- add indexes on the meta_root_business_key on all tables
 
 ## How am I developing it?
 
@@ -243,7 +243,7 @@ It's time! We're almost there!!!
 
 First, some upgrades to phase 3 to give better traceability across layers:
 - ✓ cleansed meta_source_file_path -> add field: meta_source_file_paths should concatenate file paths on update instead of replacing.
-- ✓ raw_offset_id -> add field: raw_offset_id_list should concatenate raw_offset_ids that went into this cleansed record
+- ✓ raw_offset_id -> add field: raw_offset_id_lst should concatenate raw_offset_ids that went into this cleansed record
     - change DDLs
     - change inserts
 - ✓ also updated my model (and Madalier itself) to solve accommodate these.
@@ -268,6 +268,7 @@ Second, workflow for curated:
 ```
 - seems like the logic for curated will be VERY similar to cleansed
     - **UPDATE**: this turned out to be very true and now I have to refactor a bunch of stuff so cleansed and curated can use the same logic (to some degree).
+    - I decided not to because I'm going to replace cur with DBT anyway.
 - aggregate logging -> something to do in a similar way to cln.
 
 ### Learnings
@@ -275,8 +276,9 @@ Second, workflow for curated:
 | Topic | Learning |
 | --- | --- |
 | SQL-based curated processing | Cleansed logic was handled with data frames and inserting results (and handling conflicts on insert). Curated will be different (SQL) and more complicated (more complex than just merging on event ID). The processing will very much depend on what type of end result I want. </br> </br> What I'm aiming for is mixed depending on the event. Shipment header should reflect the latest version received. Statuses should show all. Products should show the latest set received (in case of >1 event with same business key). This means I'll need orphan handling. My additive traceability requirements also have to be meshed with these rules. The general approach I will use is to load batches in temp tables to detect & handle orphans and then upsert data.|
-| Additive traceability | Had to give some thought to how exactly I want to handle this. In cleansed I have meta_source_file_path_list and meta_raw_offset_id_list which tell me what raw records ended up in cleansed.</br></br> For curated, I want any upserts to also show this history, but I can't ONLY upsert because then I would end up with orphans that shouldn't be present. |
+| Additive traceability | Had to give some thought to how exactly I want to handle this. In cleansed I have meta_source_file_path_lst and meta_raw_offset_id_lst which tell me what raw records ended up in cleansed.</br></br> For curated, I want any upserts to also show this history, but I can't ONLY upsert because then I would end up with orphans that shouldn't be present. |
 | Orphan Handling | Looked at different ways to do this. There are trade-offs in terms of how much searching you have to do to find and drop orphans. Ultimately I decided on: 1) add parent key to all entities 2) when loading a batch, filter target tables on the new parent keys (i.e. shipment_product) and then compare the child keys vs the new child keys. 3) delete any current records with no matching key in the new records 4) upsert the remaining records.  |
 | Partioning, indexing, clustering | I knew partioning, like indexing, can have impacts on how easily you can scan data and how filters perform. This was relevant for the orphan handling. I'll likely test partioning on parent_key (vs not) when loading lots of data to see how it impacts performance. I also discussed clustering with Brend and gained a better understanding of how it is important for distributed computing, specifically that by clustering data properly you can distribute the compute broadly and still have the correct outcomes. For example, if event 1-2-3 should touch the same record in the end, you'll want to cluster them together, but event 7 can be in a separate cluster as it has nothing to do with the other 3. </br></br></br> _AI Note I generated for clarification: “partitioning” and “indexing” here are about physical data layout and lookup; “clustering” in distributed systems often means grouping related keys so the same record/work lands together (e.g. shuffle / co-partitioning), which is a different idea than e.g. a warehouse “cluster key” for pruning—same word, two families of meaning._ |
 |Transactions for batch processing|One of the benefits of using SQL to go from CLN -> CUR is that I can do all of my statements for a batch within one transaction, so if something fails it will fully roll back that batch. I also won't have to worry about temp tables disappearing. (I know they don't disappear after a transaction finishes, but how SQLAlchemy engine pooling works vs connections is not 100% clear and it seems like it would not be crazy to get fed a different connection. |
 |Tracking batches in SQL|One question I had was how best to detect whether there's more data to process or not. In CLN, I loaded the next batch into a DF and if the length was 0, I knew I was done. In SQL, I'm not specifically selecting anything into my python script. A solution I'm going for is actually to just do that. (a select count(1) or exists select 1 where next batch)|
+|Handling failed batches|If an insert of a batch to cur fails, my transaction won't continue to the `insert pipeline run history` step, so I'll have to detect if it failed and insert that failure manually. Because I'm using SQLAlchemy with psycopg, it raises its own exceptions (i.e. sqlalchemy.exc.SQLAlchemyError) instead of feeding the [psycopg errors](https://www.psycopg.org/psycopg3/docs/api/errors.html#db-api-exceptions) directly. So, I need to catch the sqlalchemy exceptions (or just exception in general), if I want to detect when batches fail. If caught, then I can trigger the pipeline failed insert. | 
