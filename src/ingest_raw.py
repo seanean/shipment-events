@@ -32,6 +32,8 @@ def ingest_raw(data: Literal["shipment_status", "shipment_products"],
     validator = validate_schema(schema)
 
     for dirpath, dirnames, filenames in os.walk(config.lz_pending_path):
+        dirnames.sort()
+        filenames.sort()
         logger.info(f"Processing pending folder: {dirpath}")
         for filename in filenames:
             pending_filepath = os.path.join(dirpath, filename)
