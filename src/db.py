@@ -169,11 +169,11 @@ def insert_pipeline_batch_run(engine: Engine, iparams: BatchParameters):
                                         "traceback_message": iparams.traceback_message})
 
 
-def get_batch(engine: Engine, target_table: str, envt: str, 
+def get_batch(engine: Engine, source_table: str, envt: str, 
                   iparams: BatchParameters, batch_size: int) -> Tuple[pd.DataFrame, int]:
     offset_id = iparams.from_id_exclusive
-    logger.info(f"Getting batch from {target_table} in {envt} environment from {offset_id} to {offset_id + batch_size}")
-    batch_qry = f'SELECT * FROM {target_table} WHERE offset_id > :offset_id LIMIT :batch_size'
+    logger.info(f"Getting batch from {source_table} in {envt} environment from {offset_id} to {offset_id + batch_size}")
+    batch_qry = f'SELECT * FROM {source_table} WHERE offset_id > :offset_id LIMIT :batch_size'
     try:
         with engine.begin() as conn:
             result = conn.execute(text(batch_qry), {"offset_id": offset_id, "batch_size": batch_size})

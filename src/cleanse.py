@@ -51,7 +51,10 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
     # what raw data do we start from?
     params.latest_raw_offset_id = get_latest_raw_offset_id(engine, params)
     params.from_id_exclusive = params.latest_raw_offset_id
-    
+
+    # get insert statement
+    insert_qry = get_insert_statement(config.cln_insert_sql_path)
+
     # start getting batches. go until a batch is empty
     while True:
         batch_df, params.rows_read = get_batch(engine, config.raw_target_table, envt, params, _CLN_BATCH_SIZE)
@@ -73,7 +76,6 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
             row['payload_cln'] = add_uuids(row['payload'], data)
 
         # prepare cln insert
-        insert_qry = get_insert_statement(config.cln_insert_sql_path)
         insert_rows = [
             insert_row_builder(
                 target_table=config.cln_target_table,
