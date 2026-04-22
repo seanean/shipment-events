@@ -138,7 +138,7 @@ ON CONFLICT (shipment_uuid) DO UPDATE SET
     , meta_update_timestamp = NOW();
 
 -- only for review:
--- SELECT * FROM CUR.shipment;
+SELECT * FROM CUR.shipment;
 
 -- tmp_sp_shipment_product: to upsert into cur.shipment_product
 WITH sb_product AS (
@@ -157,7 +157,7 @@ SELECT
     product->>'shipment_product_uuid' AS shipment_product_uuid
     , shipment_uuid
     , product->>'product_id' AS product_id
-    , product->>'product_quantity' AS product_qty
+    , (product->>'product_quantity')::integer AS product_qty
     , meta_source_latest_event_id
     , meta_source_latest_file_path
     , meta_source_event_id_lst
@@ -196,7 +196,6 @@ FROM tmp_sp_shipment_product
 ON CONFLICT (shipment_product_uuid) DO UPDATE SET
     product_id = excluded.product_id
     , product_qty = excluded.product_qty
-    , shipment_type = excluded.shipment_type
     , meta_source_latest_event_id = excluded.meta_source_latest_event_id
     , meta_source_latest_file_path = excluded.meta_source_latest_file_path
     , meta_source_event_id_lst = (
@@ -216,6 +215,17 @@ ON CONFLICT (shipment_product_uuid) DO UPDATE SET
         ) AS event_ids
     )
     , meta_update_timestamp = NOW();
+
+-- only for review:
+SELECT * FROM cur.shipment_product;
+
+-- Orphan handling
+DELETE FROM cur.shipment_product
+WHERE cur.shipment_product.meta_root_business_key IN (SELECT meta_root_business_key FROM tmp_sp_batch)
+  AND (cur.shipment_product.shipment_product_uuid) NOT IN (
+      SELECT shipment_product_uuid FROM tmp_sp_shipment_product
+  );
+
 
 -- add success into meta.pipeline_run
 INSERT INTO meta.pipeline_run (
