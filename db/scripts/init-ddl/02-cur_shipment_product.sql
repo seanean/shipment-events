@@ -1,6 +1,6 @@
 CREATE TABLE cur.shipment_product (
-    shipment_product_uuid VARCHAR NOT NULL REFERENCES cur.shipment (shipment_uuid),
-    shipment_uuid VARCHAR NOT NULL,
+    shipment_product_uuid VARCHAR NOT NULL,
+    shipment_uuid VARCHAR NOT NULL REFERENCES cur.shipment (shipment_uuid),
     product_id VARCHAR NOT NULL,
     product_qty INTEGER NOT NULL,
     meta_source_latest_event_id VARCHAR NOT NULL,

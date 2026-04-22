@@ -1,6 +1,6 @@
 CREATE TABLE cur.shipment_status (
-    shipment_status_uuid VARCHAR NOT NULL REFERENCES cur.shipment (shipment_uuid),
-    shipment_uuid VARCHAR NOT NULL,
+    shipment_status_uuid VARCHAR NOT NULL,
+    shipment_uuid VARCHAR NOT NULL REFERENCES cur.shipment (shipment_uuid),
     shipment_status VARCHAR NOT NULL,
     shipment_status_tmst TIMESTAMPTZ NOT NULL,
     meta_source_latest_event_id VARCHAR NOT NULL,
