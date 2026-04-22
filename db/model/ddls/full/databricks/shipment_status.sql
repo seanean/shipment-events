@@ -1,6 +1,6 @@
 CREATE TABLE shipment_status (
-    shipment_status_uuid STRING NOT NULL REFERENCES shipment (shipment_uuid),
-    shipment_uuid STRING NOT NULL,
+    shipment_status_uuid STRING NOT NULL,
+    shipment_uuid STRING NOT NULL REFERENCES shipment (shipment_uuid),
     shipment_status STRING NOT NULL,
     shipment_status_tmst TIMESTAMP NOT NULL,
     meta_source_latest_event_id STRING NOT NULL,

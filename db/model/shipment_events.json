@@ -359,7 +359,7 @@
         "created": "2026-04-09T12:36:24.760936Z",
         "created_by": "Sean Murphy",
         "description": "Curated, silver-layer model for shipment events.",
-        "modified": "2026-04-22T16:30:31.501427Z",
+        "modified": "2026-04-22T19:55:38.379541Z",
         "name": "Shipment Events",
         "technical_name": "shipment_events",
         "version": "0.0.6"
@@ -367,30 +367,30 @@
     "meta_fields_enabled": true,
     "relationships": [
         {
-            "cardinality": "1..1 : 0..*",
-            "child_attribute_id": "9c223fc9-4365-4723-98b9-392f3224e582",
-            "child_cardinality": "Many",
-            "child_entity_id": "a1e51eee-9db7-4768-b3ba-39e5584d474e",
-            "child_mandatory": false,
-            "parent_attribute_id": "a32a5cad-e321-48f1-9ca8-e395860cd405",
-            "parent_cardinality": "One",
+            "relationship_id": "3bba6675-fffb-4c8e-9210-c12b73578c8c",
             "parent_entity_id": "8ded130c-6a74-4e06-ad5a-465f5a8a628d",
+            "parent_attribute_id": "a32a5cad-e321-48f1-9ca8-e395860cd405",
+            "child_entity_id": "a1e51eee-9db7-4768-b3ba-39e5584d474e",
+            "child_attribute_id": "f08403dc-0d9e-43da-9a45-eeae24c1ae14",
             "parent_mandatory": true,
-            "relationship_id": "6deecb42-c718-4a7f-9830-04b308e814ee",
-            "relationship_name": "shipment.shipment_uuid 1..1 : 0..* shipment_products.shipment_product_uuid"
+            "child_mandatory": false,
+            "parent_cardinality": "One",
+            "child_cardinality": "Many",
+            "cardinality": "1..1 : 0..*",
+            "relationship_name": "shipment.shipment_uuid 1..1 : 0..* shipment_product.shipment_uuid"
         },
         {
-            "cardinality": "1..1 : 0..*",
-            "child_attribute_id": "79d27a83-a85d-48a0-9cd5-2e2d7df2c4f6",
-            "child_cardinality": "Many",
-            "child_entity_id": "5a80c090-cc11-419f-b0dc-443c72b0857d",
-            "child_mandatory": false,
-            "parent_attribute_id": "a32a5cad-e321-48f1-9ca8-e395860cd405",
-            "parent_cardinality": "One",
+            "relationship_id": "b4d714ed-8828-4ac9-84e4-ccc17a2f3103",
             "parent_entity_id": "8ded130c-6a74-4e06-ad5a-465f5a8a628d",
+            "parent_attribute_id": "a32a5cad-e321-48f1-9ca8-e395860cd405",
+            "child_entity_id": "5a80c090-cc11-419f-b0dc-443c72b0857d",
+            "child_attribute_id": "78ee1a84-ca95-4d28-b0c1-abf49b9ba8f5",
             "parent_mandatory": true,
-            "relationship_id": "eb3bdf55-158e-4417-9c71-fbcf673d6bfa",
-            "relationship_name": "shipment.shipment_uuid 1..1 : 0..* shipment_status.shipment_status_uuid"
+            "child_mandatory": false,
+            "parent_cardinality": "One",
+            "child_cardinality": "Many",
+            "cardinality": "1..1 : 0..*",
+            "relationship_name": "shipment.shipment_uuid 1..1 : 0..* shipment_status.shipment_uuid"
         }
     ]
 }

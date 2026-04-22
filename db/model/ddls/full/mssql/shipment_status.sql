@@ -1,6 +1,6 @@
 CREATE TABLE [shipment_status] (
-    [shipment_status_uuid] NVARCHAR(MAX) NOT NULL REFERENCES [shipment] ([shipment_uuid]),
-    [shipment_uuid] NVARCHAR(MAX) NOT NULL,
+    [shipment_status_uuid] NVARCHAR(MAX) NOT NULL,
+    [shipment_uuid] NVARCHAR(MAX) NOT NULL REFERENCES [shipment] ([shipment_uuid]),
     [shipment_status] NVARCHAR(MAX) NOT NULL,
     [shipment_status_tmst] DATETIMEOFFSET NOT NULL,
     [meta_source_latest_event_id] NVARCHAR(MAX) NOT NULL,
