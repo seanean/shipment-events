@@ -3,12 +3,12 @@ CREATE TABLE `shipment` (
     `shipment_business_id` TEXT NOT NULL,
     `shipment_technical_id` TEXT NOT NULL,
     `shipment_type` TEXT NOT NULL,
-    `meta_source_event_names` TEXT NOT NULL,
     `meta_source_latest_event_id` TEXT NOT NULL,
+    `meta_source_latest_file_path` TEXT NOT NULL,
     `meta_source_event_id_lst` TEXT NOT NULL,
     `meta_source_file_path_lst` TEXT NOT NULL,
     `meta_root_business_key` TEXT NOT NULL,
     `meta_insert_timestamp` TIMESTAMP NOT NULL,
-    `meta_update_timestamp` TIMESTAMP,
+    `meta_updated_timestamp` TIMESTAMP,
     PRIMARY KEY (`shipment_uuid`)
 );

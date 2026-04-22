@@ -43,16 +43,6 @@
                     "technical_name": "shipment_type"
                 },
                 {
-                    "attribute_id": "924787f5-6220-4263-bcac-18c6e2592ad7",
-                    "business_name": "Meta Source Event Names",
-                    "technical_name": "meta_source_event_names",
-                    "data_type": "VARCHAR",
-                    "attribute_order": 5,
-                    "is_meta": true,
-                    "key_type": null,
-                    "mandatory": true
-                },
-                {
                     "attribute_id": "16f3a115-bc10-426a-ab24-927d9647c009",
                     "business_name": "Meta Source Event Identifier List",
                     "technical_name": "meta_source_event_id_lst",
@@ -95,7 +85,7 @@
                 {
                     "attribute_id": "f4532f7b-7797-4383-917f-e85e80200873",
                     "business_name": "Meta Updated Timestamp",
-                    "technical_name": "meta_update_timestamp",
+                    "technical_name": "meta_updated_timestamp",
                     "data_type": "TIMESTAMPTZ",
                     "attribute_order": 11,
                     "is_meta": true,
@@ -105,6 +95,16 @@
                     "attribute_id": "4284e16f-4e21-4063-aac8-0677d0cd6f97",
                     "business_name": "Meta Source Latest Event Identifier",
                     "technical_name": "meta_source_latest_event_id",
+                    "data_type": "VARCHAR",
+                    "attribute_order": 5,
+                    "is_meta": true,
+                    "key_type": null,
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "e9aed126-2eea-4313-9119-e95b5a7e10f1",
+                    "business_name": "Meta Source Latest File Path",
+                    "technical_name": "meta_source_latest_file_path",
                     "data_type": "VARCHAR",
                     "attribute_order": 6,
                     "is_meta": true,
@@ -161,16 +161,6 @@
                     "technical_name": "product_qty"
                 },
                 {
-                    "attribute_id": "186a7eec-53b7-4ad2-9253-3ce389eb131c",
-                    "business_name": "Meta Source Event Names",
-                    "technical_name": "meta_source_event_names",
-                    "data_type": "VARCHAR",
-                    "attribute_order": 5,
-                    "is_meta": true,
-                    "key_type": null,
-                    "mandatory": true
-                },
-                {
                     "attribute_id": "f1eddf9a-d4b2-4981-bebe-e4d35326f04c",
                     "business_name": "Meta Source Event Identifier List",
                     "technical_name": "meta_source_event_id_lst",
@@ -213,7 +203,7 @@
                 {
                     "attribute_id": "777838cf-ebbb-4991-a40d-b954c9582708",
                     "business_name": "Meta Updated Timestamp",
-                    "technical_name": "meta_update_timestamp",
+                    "technical_name": "meta_updated_timestamp",
                     "data_type": "TIMESTAMPTZ",
                     "attribute_order": 11,
                     "is_meta": true,
@@ -223,6 +213,16 @@
                     "attribute_id": "09c1f81c-3baf-4026-a220-cc1c3a402d15",
                     "business_name": "Meta Source Latest Event Identifier",
                     "technical_name": "meta_source_latest_event_id",
+                    "data_type": "VARCHAR",
+                    "attribute_order": 5,
+                    "is_meta": true,
+                    "key_type": null,
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "1b271e43-bdb6-4732-91cd-de3cea082a8a",
+                    "business_name": "Meta Source Latest File Path",
+                    "technical_name": "meta_source_latest_file_path",
                     "data_type": "VARCHAR",
                     "attribute_order": 6,
                     "is_meta": true,
@@ -279,16 +279,6 @@
                     "technical_name": "shipment_status_tmst"
                 },
                 {
-                    "attribute_id": "39385c2f-8908-446c-80cf-d85a17167211",
-                    "business_name": "Meta Source Event Names",
-                    "technical_name": "meta_source_event_names",
-                    "data_type": "VARCHAR",
-                    "attribute_order": 5,
-                    "is_meta": true,
-                    "key_type": null,
-                    "mandatory": true
-                },
-                {
                     "attribute_id": "5613c30a-964c-49a8-b0cb-2cdf02e36925",
                     "business_name": "Meta Source Event Identifier List",
                     "technical_name": "meta_source_event_id_lst",
@@ -331,7 +321,7 @@
                 {
                     "attribute_id": "75678b25-23fc-44bd-a774-914918420f17",
                     "business_name": "Meta Updated Timestamp",
-                    "technical_name": "meta_update_timestamp",
+                    "technical_name": "meta_updated_timestamp",
                     "data_type": "TIMESTAMPTZ",
                     "attribute_order": 11,
                     "is_meta": true,
@@ -341,6 +331,16 @@
                     "attribute_id": "1548de4d-598a-425f-987e-eccdffda334e",
                     "business_name": "Meta Source Latest Event Identifier",
                     "technical_name": "meta_source_latest_event_id",
+                    "data_type": "VARCHAR",
+                    "attribute_order": 5,
+                    "is_meta": true,
+                    "key_type": null,
+                    "mandatory": true
+                },
+                {
+                    "attribute_id": "ddf524f3-51a1-4773-9bfa-91c78491bfa4",
+                    "business_name": "Meta Source Latest File Path",
+                    "technical_name": "meta_source_latest_file_path",
                     "data_type": "VARCHAR",
                     "attribute_order": 6,
                     "is_meta": true,
@@ -359,10 +359,10 @@
         "created": "2026-04-09T12:36:24.760936Z",
         "created_by": "Sean Murphy",
         "description": "Curated, silver-layer model for shipment events.",
-        "modified": "2026-04-22T16:14:06.466919Z",
+        "modified": "2026-04-22T16:30:31.501427Z",
         "name": "Shipment Events",
         "technical_name": "shipment_events",
-        "version": "0.0.5"
+        "version": "0.0.6"
     },
     "meta_fields_enabled": true,
     "relationships": [

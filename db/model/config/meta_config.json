@@ -1,14 +1,14 @@
 {
     "fields": [
         {
-            "business_name": "Meta Source Event Names",
-            "technical_name": "meta_source_event_names",
+            "business_name": "Meta Source Latest Event Identifier",
+            "technical_name": "meta_source_latest_event_id",
             "data_type": "VARCHAR",
             "mandatory": true
         },
         {
-            "business_name": "Meta Source Latest Event Identifier",
-            "technical_name": "meta_source_latest_event_id",
+            "business_name": "Meta Source Latest File Path",
+            "technical_name": "meta_source_latest_file_path",
             "data_type": "VARCHAR",
             "mandatory": true
         },
@@ -38,7 +38,7 @@
         },
         {
             "business_name": "Meta Updated Timestamp",
-            "technical_name": "meta_update_timestamp",
+            "technical_name": "meta_updated_timestamp",
             "data_type": "TIMESTAMPTZ"
         }
     ]

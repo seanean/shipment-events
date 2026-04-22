@@ -3,11 +3,11 @@ CREATE TABLE [shipment_status] (
     [shipment_uuid] NVARCHAR(MAX) NOT NULL,
     [shipment_status] NVARCHAR(MAX) NOT NULL,
     [shipment_status_tmst] DATETIMEOFFSET NOT NULL,
-    [meta_source_event_names] NVARCHAR(MAX) NOT NULL,
     [meta_source_latest_event_id] NVARCHAR(MAX) NOT NULL,
+    [meta_source_latest_file_path] NVARCHAR(MAX) NOT NULL,
     [meta_source_event_id_lst] NVARCHAR(MAX) NOT NULL,
     [meta_source_file_path_lst] NVARCHAR(MAX) NOT NULL,
     [meta_root_business_key] NVARCHAR(MAX) NOT NULL,
     [meta_insert_timestamp] DATETIMEOFFSET NOT NULL,
-    [meta_update_timestamp] DATETIMEOFFSET
+    [meta_updated_timestamp] DATETIMEOFFSET
 );

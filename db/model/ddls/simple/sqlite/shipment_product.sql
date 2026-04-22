@@ -3,11 +3,11 @@ CREATE TABLE shipment_product (
     shipment_uuid TEXT NOT NULL,
     product_id TEXT NOT NULL,
     product_qty INTEGER NOT NULL,
-    meta_source_event_names TEXT NOT NULL,
     meta_source_latest_event_id TEXT NOT NULL,
+    meta_source_latest_file_path TEXT NOT NULL,
     meta_source_event_id_lst TEXT NOT NULL,
     meta_source_file_path_lst TEXT NOT NULL,
     meta_root_business_key TEXT NOT NULL,
     meta_insert_timestamp TEXT NOT NULL,
-    meta_update_timestamp TEXT
+    meta_updated_timestamp TEXT
 );
