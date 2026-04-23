@@ -8,6 +8,12 @@ Want to read about the project? Check the [project blog](BLOG.md).
 
 ---
 
+## Roadmap
+
+
+
+---
+
 ## Project Documentation
 
 ### Layout
@@ -40,7 +46,7 @@ project-structure/
 
 - `make raw` — run raw ingestion (`src/ingest_raw.py`)
 - `make cleanse` — run cleanse pipeline (`src/cleanse.py`)
-- `make run` — `composeup`, then `raw`, then `cleanse` (full stack in order)
+- `make run` — `composeup`, then `raw`, then `cleanse`, then `curate` (full stack in order)
 - `make rerun` — `resetall`, then same as `run` (clean DB + LZ, then full pipeline)
 
 **Reset local state**
@@ -57,6 +63,21 @@ project-structure/
 
 ## Version Updates
 
+### Phase 4 - Cleansed -> Curated 2026-04-23
+
+Curated is working!
+- incremental ingest from cleansed
+- orchestrated in python, but full batch processing done within SQL
+- batch all occurs within one transaction, so issues are rolled back
+- orphans from shipment_product are deleted (functional decision: latest event is correct)
+- tracking run history in meta.pipeline_run
+- additive traceability in meta fields: see what cln data was merged into a single cln record.
+
+<h1 align="center">
+  <img src="resources/shipment-events - phase-4.png" alt="Shipment Events Phase 3" width="950">
+</h1>
+
+
 ### Phase 3 - Raw -> Cleansed - 2026-04-19
 
 Cleansed is working!
@@ -65,6 +86,7 @@ Cleansed is working!
 - adding uuids
 - storing cln
 - tracking run history in meta.pipeline_run
+- additive traceability in meta fields: see what raw data was merged into a single cln record.
 
 <h1 align="center">
   <img src="resources/shipment-events - phase-3.png" alt="Shipment Events Phase 3" width="950">

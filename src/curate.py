@@ -82,21 +82,9 @@ def curate(
                 logger.info(f'Curated run {params_cur.run_id} batch {params_cur.batch_id} complete for {data} query executed successfully.')
 
                 # detect if there are more cln records to process in a next cur batch.
-                result = conn.execute(
-                    text(
-                        """SELECT
-                            (
-                                SELECT COUNT(1)
-                                FROM cln.shipment_products
-                                WHERE raw_offset_id > (
-                                    SELECT MAX(to_id_inclusive)
-                                    FROM meta.pipeline_run 
-                                    WHERE job_name = :job_name
-                                        AND status = 'success'
-                                    )
-                            )
-                        + 
-                            (
+                match data:
+                    case "shipment_status":
+                        check_qry = text("""
                                 SELECT COUNT(1)
                                 FROM cln.shipment_status
                                 WHERE raw_offset_id > (
@@ -104,13 +92,17 @@ def curate(
                                     FROM meta.pipeline_run 
                                     WHERE job_name = :job_name
                                         AND status = 'success'
-                                    )
-                            );
-
-                        """
-                    ),
-                    {'job_name': params_cur.job_name},
-                ).fetchone()
+                                    )""")
+                    case "shipment_products":
+                        check_qry = text("""SELECT COUNT(1)
+                                FROM cln.shipment_products
+                                WHERE raw_offset_id > (
+                                    SELECT MAX(to_id_inclusive)
+                                    FROM meta.pipeline_run 
+                                    WHERE job_name = :job_name
+                                        AND status = 'success'
+                                    )""")
+                result = conn.execute(check_qry, {'job_name': params_cur.job_name},).fetchone()
                 assert result is not None
                 still_to_process = result if result is not None else 0
                 if still_to_process[0] > 0:
@@ -142,8 +134,7 @@ def curate(
 
 
 def main() -> None:
-    # curate(data='shipment_status', envt='dev')
-    # i still need to write the batch file for shipment_status
+    curate(data='shipment_status', envt='dev')
     curate(data='shipment_products', envt='dev')
 
 
