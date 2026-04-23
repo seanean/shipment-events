@@ -2,20 +2,20 @@ import logging
 import traceback
 
 from db import (
-    get_engine, 
-    get_insert_statement, 
+    get_engine,
+    get_insert_statement,
     insert_row_builder,
     insert_pipeline_batch_run,
     get_batch,
-    get_latest_run_id, 
-    get_latest_raw_offset_id, 
-    BatchParameters
+    get_latest_run_id,
+    get_latest_raw_offset_id,
+    BatchParameters,
 )
 from sqlalchemy import text
 from datetime import datetime, UTC
 from typing import Literal
 from config_util import get_config, resolve_config, _REPO_ROOT_PATH
-from app_logger import configure_logger # only required if running cleanse.py directly
+from app_logger import configure_logger  # only required if running cleanse.py directly
 from dataclasses import dataclass
 from psycopg import sql
 
@@ -23,12 +23,15 @@ from psycopg import sql
 logger = logging.getLogger(__name__)
 
 
-_CUR_BATCH_SIZE = 1 # 200
+_CUR_BATCH_SIZE = 1  # 200
+
 
 # TODO: not sure if todo, but a lot of this logic can overlap with cleansed.
 # that said, I'm going to replace CUR with dbt so maybe I don't refactor yet.
-def curate(data: Literal["shipment_status", "shipment_products"],
-           envt: Literal["dev"]) -> None:
+def curate(
+    data: Literal['shipment_status', 'shipment_products'],
+    envt: Literal['dev']
+) -> None:
     params_cur = BatchParameters()
 
     # initializing variables
@@ -36,16 +39,16 @@ def curate(data: Literal["shipment_status", "shipment_products"],
     params_cur.job_name = f'curate_{data}_{envt}'
 
     # preparing config
-    config_path = _REPO_ROOT_PATH.joinpath(f"config/{envt}.yaml")
+    config_path = _REPO_ROOT_PATH.joinpath(f'config/{envt}.yaml')
     loaded_config = get_config(data, config_path)
     config = resolve_config(loaded_config)
 
     # what run is this?
-    engine = get_engine() # one time
+    engine = get_engine()  # one time
     params_cur.latest_run_id = get_latest_run_id(engine, envt)
     params_cur.run_id = params_cur.latest_run_id + 1
     params_cur.batch_id = 1
-    logger.info(f"Latest run ID: {params_cur.latest_run_id}, current run ID: {params_cur.run_id}")
+    logger.info(f'Latest run ID: {params_cur.latest_run_id}, current run ID: {params_cur.run_id}')
 
     # what cln data do we start from?
     params_cur.latest_raw_offset_id = get_latest_raw_offset_id(engine, params_cur)
@@ -57,57 +60,67 @@ def curate(data: Literal["shipment_status", "shipment_products"],
     while True:
         try:
             with engine.begin() as conn:
-                logger.info(f"Executing insert query")
+                logger.info(f'Executing insert query')
                 # run batch
-                conn.exec_driver_sql(sql.SQL(insert_qry).format(
-                                                            params_cur.from_id_exclusive,
-                                                            _CUR_BATCH_SIZE,
-                                                            params_cur.run_id,
-                                                            params_cur.batch_id,
-                                                            params_cur.job_name,
-                                                            params_cur.started_at,
-                                                            params_cur.latest_raw_offset_id,
-                                                            params_cur.from_id_exclusive,
-                                                            params_cur.job_name,
-                                                            params_cur.job_name
-                                                        ))
-                logger.info(f"Curated run {params_cur.run_id} batch {params_cur.batch_id} complete for {data} query executed successfully.")
+                composed = sql.SQL(insert_qry).format(
+                    params_cur.from_id_exclusive,
+                    _CUR_BATCH_SIZE,
+                    params_cur.run_id,
+                    params_cur.batch_id,
+                    params_cur.job_name,
+                    params_cur.started_at,
+                    params_cur.latest_raw_offset_id,
+                    params_cur.from_id_exclusive,
+                    params_cur.job_name,
+                    params_cur.job_name,
+                )
+                pg = conn.connection.driver_connection
+                assert pg is not None
+                pg.execute(composed)
+                # alternative. conn.exec_driver_sql(composed), but that makes mypy sad
+
+                logger.info(f'Curated run {params_cur.run_id} batch {params_cur.batch_id} complete for {data} query executed successfully.')
 
                 # detect if there are more cln records to process in a next cur batch.
-                result = conn.execute(text("""SELECT
-                                                            (
-                                                                SELECT COUNT(1)
-                                                                FROM cln.shipment_products
-                                                                WHERE raw_offset_id > (
-                                                                    SELECT MAX(to_id_inclusive)
-                                                                    FROM meta.pipeline_run 
-                                                                    WHERE job_name = :job_name
-                                                                        AND status = 'success'
-                                                                    )
-                                                            )
-                                                        + 
-                                                            (
-                                                                SELECT COUNT(1)
-                                                                FROM cln.shipment_status
-                                                                WHERE raw_offset_id > (
-                                                                    SELECT MAX(to_id_inclusive)
-                                                                    FROM meta.pipeline_run 
-                                                                    WHERE job_name = :job_name
-                                                                        AND status = 'success'
-                                                                    )
-                                                            );
+                result = conn.execute(
+                    text(
+                        """SELECT
+                            (
+                                SELECT COUNT(1)
+                                FROM cln.shipment_products
+                                WHERE raw_offset_id > (
+                                    SELECT MAX(to_id_inclusive)
+                                    FROM meta.pipeline_run 
+                                    WHERE job_name = :job_name
+                                        AND status = 'success'
+                                    )
+                            )
+                        + 
+                            (
+                                SELECT COUNT(1)
+                                FROM cln.shipment_status
+                                WHERE raw_offset_id > (
+                                    SELECT MAX(to_id_inclusive)
+                                    FROM meta.pipeline_run 
+                                    WHERE job_name = :job_name
+                                        AND status = 'success'
+                                    )
+                            );
 
-                                                        """), {"job_name": params_cur.job_name}).fetchone()
+                        """
+                    ),
+                    {'job_name': params_cur.job_name},
+                ).fetchone()
                 assert result is not None
                 still_to_process = result if result is not None else 0
                 if still_to_process[0] > 0:
-                    logger.info(f"Curated batches continuing. {still_to_process} events remaining.")
+                    logger.info(f'Curated batches continuing. {still_to_process} events remaining.')
                 else:
-                    logger.info(f"Curated batches complete. {still_to_process} events remaining.")
+                    logger.info(f'Curated batches complete. {still_to_process} events remaining.')
                     break
         # if cur insert failed, insert a pipeline run failure
         except Exception as e:
-            logger.error(f"Error inserting batch: {e}")
+            logger.error(f'Error inserting batch: {e}')
             try:
                 params_cur.status = 'failed'
                 params_cur.error_message = str(e)
@@ -119,7 +132,7 @@ def curate(data: Literal["shipment_status", "shipment_products"],
                 raise meta_e from e
             raise e
         # prepare for next loop iteration
-        params_cur.batch_id +=1
+        params_cur.batch_id += 1
         params_cur.from_id_exclusive = get_latest_raw_offset_id(engine, params_cur)
         params_cur.rows_read = 0
         params_cur.rows_written = 0
@@ -129,9 +142,10 @@ def curate(data: Literal["shipment_status", "shipment_products"],
 
 
 def main() -> None:
-    # curate(data="shipment_status", envt="dev")
+    # curate(data='shipment_status', envt='dev')
     # i still need to write the batch file for shipment_status
-    curate(data="shipment_products", envt="dev")
+    curate(data='shipment_products', envt='dev')
+
 
 if __name__ == '__main__':
     logger = configure_logger()
