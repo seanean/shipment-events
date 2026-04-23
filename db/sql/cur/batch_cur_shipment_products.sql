@@ -1,7 +1,7 @@
 /*vars to pass in in this order because I'm using psycopg sql.SQL with .format
 params_cur.from_id_exclusive,
 _CUR_BATCH_SIZE,
-params_cur.rund_id,
+params_cur.run_id,
 params_cur.batch_id,
 params_cur.job_name,
 params_cur.started_at,
