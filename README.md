@@ -10,7 +10,39 @@ Want to read about the project? Check the [project blog](BLOG.md).
 
 ## Roadmap
 
+| Phase | What | With | Status |
+|-----|-----|-----|-----|
+|1|Setup + Raw|Python, Docker|Done|
+|2|Raw + Quarantine|Python, Docker|Done|
+|3|Cleansed|Python, Docker|Done|
+|4|Curated|Python, Docker|Done|
+|5|Curated in dbt|dbt, Python, Docker|WIP|
+|...|I have an idea, but I'll decide later|...|...|
 
+**My to-do list:**
+- `Layered pipelines / medallion architecture`
+  - [✔] Raw / [✔] Silver / [] Gold
+- `Event-based data ingestion` 
+  - ✔ `Local`
+  - `REST APIs`
+  - `Kafka`
+- ✔`Schema validation`
+- ✔`Quarantining`
+- ✔`UUID generation`
+- ✔`Unit testing`
+- `Automated testing`
+- `CICD with Github Actions`
+- ✔`PostgreSQL`
+- ✔`Database access management`
+- `dbt`
+- `Spark / PySpark`
+- ✔`Idempotent pipelines`
+- `Checkpoints`
+  - ✔ Kinda, using pipeline_run history table.
+- `Airflow`
+- `Reprocessing`
+- `Dead letter queue`
+- `Programmatic STM implementation`
 
 ---
 
@@ -26,11 +58,10 @@ project-structure/
 ├── db /              
 │   └── model        # curated (silver) model
 ├── landing-zone/    # sample events I created
-├── learnings/       # a folder of all of my notes I'm taking as I go through this
 ├── schemas/         # event schemas for the shipment events!
 ├── src/             # python stuff
 ├── blog.md          # day to day updates about the project and what I'm learning
-└── readme.md        # project docs + I'm thinking docs of each release to show its evolution
+└── readme.md        # project docs + phase docs
 ```
 
 ### Running this bad boy
