@@ -13,9 +13,7 @@ from db import (
 )
 from sqlalchemy import text
 from datetime import datetime, UTC
-from typing import Literal # Any, cast, Tuple
-# from uuid import uuid5, NAMESPACE_DNS
-# from copy import deepcopy
+from typing import Literal
 from config_util import get_config, resolve_config, _REPO_ROOT_PATH
 from app_logger import configure_logger # only required if running cleanse.py directly
 from dataclasses import dataclass
@@ -57,19 +55,10 @@ def curate(data: Literal["shipment_status", "shipment_products"],
     insert_qry = get_insert_statement(config.cur_insert_sql_path)
 
     while True:
-        # do cln insert
         try:
             with engine.begin() as conn:
                 logger.info(f"Executing insert query")
-                # row = conn.execute(text(insert_qry),{"cur_batch_size": _CUR_BATCH_SIZE,
-                #                         "run_id": params_cur.run_id,
-                #                         "batch_id": params_cur.batch_id,
-                #                         "job_name": params_cur.job_name,
-                #                         "started_at": params_cur.started_at,
-                #                         "starting_from_id_exclusive": params_cur.latest_raw_offset_id,
-                #                         "from_id_exclusive": params_cur.from_id_exclusive}).fetchone()
-                
-                # run batch.
+                # run batch
                 conn.exec_driver_sql(sql.SQL(insert_qry).format(
                                                             params_cur.from_id_exclusive,
                                                             _CUR_BATCH_SIZE,
@@ -84,7 +73,7 @@ def curate(data: Literal["shipment_status", "shipment_products"],
                                                         ))
                 logger.info(f"Curated run {params_cur.run_id} batch {params_cur.batch_id} complete for {data} query executed successfully.")
 
-                # detect if there are more cln records to process in a next batch.
+                # detect if there are more cln records to process in a next cur batch.
                 result = conn.execute(text("""SELECT
                                                             (
                                                                 SELECT COUNT(1)
@@ -141,6 +130,7 @@ def curate(data: Literal["shipment_status", "shipment_products"],
 
 def main() -> None:
     # curate(data="shipment_status", envt="dev")
+     # i still need to write the batch file for shipment_status
     curate(data="shipment_products", envt="dev")
 
 if __name__ == '__main__':
