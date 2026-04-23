@@ -12,7 +12,7 @@ shipment_status:
   cln_db_schema: cln
   cln_table: shipment_status
   cln_insert_sql_path: db/sql/cln/cln_shipment_status_insert.sql
-  cur_insert_sql_path: db/sql/cur/batch_cur_shipment_products.sql
+  cur_insert_sql_path: db/sql/cur/batch_cur_shipment_status.sql
 
 shipment_products:
   lz_pending_path: landing-zone/pending/shipment_products
@@ -28,4 +28,4 @@ shipment_products:
   cln_db_schema: cln
   cln_table: shipment_products
   cln_insert_sql_path: db/sql/cln/cln_shipment_products_insert.sql
-  cur_insert_sql_path: db/sql/cur/batch_cur_shipment_status.sql
+  cur_insert_sql_path: db/sql/cur/batch_cur_shipment_products.sql

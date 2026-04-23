@@ -1,19 +1,23 @@
---vars to pass in
--- :latest_raw_offset_id
--- :cur_batch_size
--- :run_id
--- :batch_id
--- :job_name
--- :started_at
--- :starting_from_id_exclusive
--- :from_id_exclusive
-
+/*vars to pass in in this order because I'm using psycopg sql.SQL with .format
+params_cur.from_id_exclusive,
+_CUR_BATCH_SIZE,
+params_cur.rund_id,
+params_cur.batch_id,
+params_cur.job_name,
+params_cur.started_at,
+params_cur.latest_raw_offset_id,
+params_cur.from_id_exclusive,
+params_cur.job_name,
+params_cur.job_name
+*/
 BEGIN;
 
--- only for review:
--- SELECT * FROM cln.shipment_products;
+/* only for review:
+SELECT * FROM cln.shipment_products;
+*/
 
--- get data for given batch
+/* get data for given batch */
+CREATE TEMP TABLE tmp_sp_batch ON COMMIT DROP AS
 WITH sp_batch AS (
     SELECT
         event_id
@@ -28,14 +32,16 @@ WITH sp_batch AS (
         , meta_source_file_path
         , meta_source_file_path_lst
     FROM cln.shipment_products
-    WHERE raw_offset_id > :latest_raw_offset_id --1 --feed latest_raw_offset_id from pipeline_run
-    LIMIT :cur_batch_size--5--feed _CUR_BATCH_SIZE
+    WHERE raw_offset_id > {}--params_cur.from_id_exclusive
+    LIMIT {}--_CUR_BATCH_SIZE
 )
 
--- per business ID: //Note: for status, we will have to do this per event type, not just root key.
--- 1) find newest offset
--- 2) concatenate file paths
--- 3) concatenate event IDs
+/*
+per business ID: //Note: for status, we will have to do this per event type, not just root key.
+1) find newest offset
+2) concatenate file paths
+3) concatenate event IDs
+*/
 , sp_latest AS (
     SELECT
         meta_root_business_key
@@ -46,7 +52,7 @@ WITH sp_batch AS (
     GROUP BY meta_root_business_key
 )
 
--- populate temp_sp_batch: events to upsert to cur in original format
+/* populate temp_sp_batch: events to upsert to cur in original format */
 , to_process AS (
     SELECT
         sp_batch.raw_offset_id
@@ -61,15 +67,16 @@ WITH sp_batch AS (
         ON sp_batch.raw_offset_id = sp_latest.raw_offset_id
 )
 SELECT *
-INTO TEMP TABLE tmp_sp_batch
 FROM to_process;
 
 
+/*
+only for review:
+select * from tmp_sp_batch;
+*/
 
--- only for review:
--- select * from tmp_sp_batch;
-
--- tmp_sp_shipment: to upsert into cur.shipment
+/* tmp_sp_shipment: to upsert into cur.shipment*/
+CREATE TEMP TABLE tmp_sp_shipment ON COMMIT DROP AS
 SELECT
     sb.meta_root_business_key AS shipment_uuid
     , sb.payload_cln->'event_data'->>'shipment_business_id' AS shipment_business_id
@@ -80,13 +87,14 @@ SELECT
     , sb.meta_source_event_id_lst
     , sb.meta_source_file_path_lst
     , sb.meta_root_business_key
-INTO TEMP TABLE tmp_sp_shipment
 FROM tmp_sp_batch AS sb;
 
--- only for review:
--- SELECT * FROM tmp_sp_shipment;
+/*
+only for review:
+SELECT * FROM tmp_sp_shipment;
+*/
 
--- cur.shipment upsert
+/* cur.shipment upsert */
 INSERT INTO cur.shipment (
     shipment_uuid
     , shipment_business_id
@@ -137,10 +145,13 @@ ON CONFLICT (shipment_uuid) DO UPDATE SET
     )
     , meta_update_timestamp = NOW();
 
--- only for review:
--- SELECT * FROM CUR.shipment;
+/*
+only for review:
+SELECT * FROM CUR.shipment;
+*/ 
 
--- tmp_sp_shipment_product: to upsert into cur.shipment_product
+/* tmp_sp_shipment_product: to upsert into cur.shipment_product */
+CREATE TEMP TABLE tmp_sp_shipment_product ON COMMIT DROP AS
 WITH sb_product AS (
     SELECT
         jsonb_array_elements(sb.payload_cln->'event_data'->'products') AS product
@@ -163,10 +174,9 @@ SELECT
     , meta_source_event_id_lst
     , meta_source_file_path_lst
     , meta_root_business_key
-INTO TEMP TABLE tmp_sp_shipment_product
 FROM sb_product;
 
--- cur.shipment_product upsert
+/* cur.shipment_product upsert */
 INSERT INTO cur.shipment_product (
     shipment_product_uuid
     , shipment_uuid
@@ -215,11 +225,12 @@ ON CONFLICT (shipment_product_uuid) DO UPDATE SET
         ) AS event_ids
     )
     , meta_update_timestamp = NOW();
+/*
+only for review:
+SELECT * FROM cur.shipment_product;
+*/
 
--- only for review:
--- SELECT * FROM cur.shipment_product;
-
--- Orphan handling
+/* Orphan handling */
 DELETE FROM cur.shipment_product
 WHERE cur.shipment_product.meta_root_business_key IN (SELECT meta_root_business_key FROM tmp_sp_batch)
   AND (cur.shipment_product.shipment_product_uuid) NOT IN (
@@ -227,7 +238,7 @@ WHERE cur.shipment_product.meta_root_business_key IN (SELECT meta_root_business_
   );
 
 
--- add success into meta.pipeline_run
+/* add success into meta.pipeline_run */
 INSERT INTO meta.pipeline_run (
         run_id
         , batch_id
@@ -245,14 +256,14 @@ INSERT INTO meta.pipeline_run (
         , meta_insert_timestamp
     )
     VALUES (
-        :run_id
-        , :batch_id
-        , :job_name
+        {}--params_cur.run_id
+        , {}--params_cur.batch_id
+        , {}--params_cur.job_name
         , 'success'
-        , :started_at
+        , {}--params_cur.started_at
         , NOW()--finished_at
-        , :starting_from_id_exclusive
-        , :from_id_exclusive
+        , {}--params_cur.latest_raw_offset_id
+        , {}--params_cur.from_id_exclusive
         , (SELECT MAX(raw_offset_id) FROM tmp_sp_batch)--to_id_inclusive
         , (SELECT COUNT(1) FROM tmp_sp_batch)--rows_read
         , ((SELECT COUNT(1) FROM tmp_sp_shipment_product)+(SELECT COUNT(1) FROM tmp_sp_shipment))--rows_written
@@ -260,5 +271,4 @@ INSERT INTO meta.pipeline_run (
         , NULL--traceback_message
         , NOW()--meta_insert_timestamp
     );
-
 COMMIT;

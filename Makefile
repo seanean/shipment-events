@@ -22,6 +22,12 @@ cleanse: # check if python exists and is executable
 	fi
 	.venv/bin/python src/cleanse.py
 
+curate: # check if python exists and is executable
+	@if [ ! -x ".venv/bin/python" ]; then \
+		echo "Run 'make setup' first."; exit 1; \
+	fi
+	.venv/bin/python src/curate.py
+
 composeup:
 	docker compose up -d --wait
 	@echo "PostgreSQL is ready to use."
@@ -55,7 +61,7 @@ mypy:
 	.venv/bin/mypy src
 
 run:
-	make composeup && make raw && make cleanse
+	make composeup && make raw && make cleanse && make curate
 
 rerun:
-	make resetall && make composeup && make raw && make cleanse
+	make resetall && make composeup && make raw && make cleanse && make curate
