@@ -359,7 +359,7 @@
         "created": "2026-04-09T12:36:24.760936Z",
         "created_by": "Sean Murphy",
         "description": "Curated, silver-layer model for shipment events.",
-        "modified": "2026-04-22T19:55:38.379541Z",
+        "modified": "2026-04-23T05:55:51.441103Z",
         "name": "Shipment Events",
         "technical_name": "shipment_events",
         "version": "0.0.6"
