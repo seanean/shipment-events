@@ -24,7 +24,8 @@ Want to read about the project? Check the [project blog](BLOG.md).
   - [✔] Raw / [✔] Silver / [] Gold
 - `Event-based data ingestion` 
   - ✔ `Local`
-  - `REST APIs`
+  - `Event generator`
+  - `Flask REST API + Endpoint`
   - `Kafka`
 - ✔`Schema validation`
 - ✔`Quarantining`
