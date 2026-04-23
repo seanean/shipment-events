@@ -130,7 +130,7 @@ def curate(data: Literal["shipment_status", "shipment_products"],
 
 def main() -> None:
     # curate(data="shipment_status", envt="dev")
-     # i still need to write the batch file for shipment_status
+    # i still need to write the batch file for shipment_status
     curate(data="shipment_products", envt="dev")
 
 if __name__ == '__main__':
