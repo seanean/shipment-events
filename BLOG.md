@@ -284,3 +284,29 @@ It took a lot of time to land on how I wanted to do curated because of endlessly
 |Transactions for batch processing|One of the benefits of using SQL to go from CLN -> CUR is that I can do all of my statements for a batch within one transaction, so if something fails it will fully roll back that batch. I also won't have to worry about temp tables disappearing. (I know they don't disappear after a transaction finishes, but how SQLAlchemy engine pooling works vs connections is not 100% clear and it seems like it would not be crazy to get fed a different connection. |
 |Tracking batches in SQL|One question I had was how best to detect whether there's more data to process or not. In CLN, I loaded the next batch into a DF and if the length was 0, I knew I was done. In SQL, I'm not specifically selecting anything into my python script. A solution I'm going for is actually to just do that. (a select count(1) or exists select 1 where next batch)|
 |Handling failed batches|If an insert of a batch to cur fails, my transaction won't continue to the `insert pipeline run history` step, so I'll have to detect if it failed and insert that failure manually. Because I'm using SQLAlchemy with psycopg, it raises its own exceptions (i.e. sqlalchemy.exc.SQLAlchemyError) instead of feeding the [psycopg errors](https://www.psycopg.org/psycopg3/docs/api/errors.html#db-api-exceptions) directly. So, I need to catch the sqlalchemy exceptions (or just exception in general), if I want to detect when batches fail. If caught, then I can trigger the pipeline failed insert. | 
+
+
+## Phase 5 - dbt
+
+## Did
+
+- Spent a lot of time figuring out dbt x Docker x Postgres:
+    - what dbt Docker image to use (create my own)
+    - what Python Docker image to use + what packages
+    - what dbt-postgres & dbt-core packages to use
+    - user setup to prevent access conflicts (ctr vs local)
+    - Docker network mode for efficient x-container communication
+    - dbt profile setup
+
+Next: time to dive into learning dbt.
+
+
+## Learned
+
+|Topic|Learning|
+|-----|--------|
+|Container Users| Didn't have to consider in previous Docker work. dbt's example lead to root user on ctr generating files -> not writeable for WSL user without `chown`ing them. Ended up using my WSL uid:gid + not writing to /root to avoid this issue. </br></br> Not entirely clear how this would translate to production, as you might use a service user or something similar. Something for later!|
+|dbt as a short-lived container|Understanding working with a dbt container took a bit of time, but that was probably contributed to by me not diving more into dbt itself before setting up the container. As far as I understand, it's not a long running service like Postgres or a flask server, it's instead something that gets spun up to execute code. Essentially, when I `Docker compose run --rm -it dbt-svc test`, it's spinning up the container, copying my src via the bind mount, then executing the command and shutting down.|
+|dbt profiles|They're a bit like .env files in that they often contain secrets and are not committed. I'm just inheriting the env vars from my .env so I _will_ be committing mine.|
+|dbt / dbt-postgres Docker files|The images pushed don't seem to align with the newest version of dbt-postgres on pypi. Maybe I'm misunderstanding something. I decided to just build my own Dockerfile based on the existing one + updating to Trixie (+ upgrading debian packages), using dbt-core 1.10.20 and dbt-postgres 1.10.|
+|dbt folder setup on container| ending up with: `Docker compose run --rm -it -w /usr/app dbt-svc init shipment_events` so project is under /usr/app. setting `working_dir` in compose to `/usr/app/shipment_events` leads to dbt commands executing successfully. i'm also doing something _kind of_ weird by binding profiles to `/usr/app/profiles/profiles.yml` which mean it ends up within my dbt project folder (even though it's not a project-level file). w/e though, it's not a big deal. |

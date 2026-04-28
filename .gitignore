@@ -6,3 +6,4 @@ learnings/*
 .cursor
 .mypy_cache
 .pytest_cache
+*.log

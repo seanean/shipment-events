@@ -1,0 +1,11 @@
+shipment_events:
+  target: dev
+  outputs:
+    dev:
+      type: postgres
+      host: postgres-svc
+      port: "{{ env_var('POSTGRES_PORT') }}"
+      user: "{{ env_var('POSTGRES_RW_USER') }}"
+      password: "{{ env_var('POSTGRES_RW_PW') }}"
+      dbname: "{{ env_var('POSTGRES_DB') }}"
+      connect_timeout: 10 # default

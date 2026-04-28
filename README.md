@@ -95,6 +95,11 @@ project-structure/
 
 ## Version Updates
 
+### Phase 5 - dbt: Cleansed -> Curated 2026-04-26
+
+WIP
+
+
 ### Phase 4 - Cleansed -> Curated 2026-04-23
 
 Curated is working!
