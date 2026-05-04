@@ -1,0 +1,20 @@
+name: shipment-events
+
+services:
+  dbt-svc:
+    container_name: dbt-ctr
+    build:
+      context: dbt
+    # network_mode: host # removed for direct postgres-dbt connection (dbt uses host postgres-svc)
+    env_file:
+      - .env
+    volumes:
+      - ./dbt:/usr/app
+      # profiles.yml is under /app/profiles/profiles.yml so i don't need a separate mount
+      # profiles location specified in .env: DBT_PROFILES_DIR
+    command: ls
+    working_dir: /usr/app/shipment_events
+    user: "1000:1000"
+    depends_on:
+      postgres-svc:
+        condition: service_healthy
