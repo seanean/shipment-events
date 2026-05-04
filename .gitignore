@@ -7,3 +7,4 @@ learnings/*
 .mypy_cache
 .pytest_cache
 *.log
+dbtnv
