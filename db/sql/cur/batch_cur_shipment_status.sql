@@ -46,7 +46,7 @@ per business ID: //Note: for status, we will have to do this per event type, not
     SELECT
         meta_root_business_key
         , event_name
-        , STRING_AGG(event_id, ',' ORDER BY event_id DESC) AS meta_source_event_id_lst
+        , STRING_AGG(CONCAT(event_name, ': ', event_id), ',' ORDER BY CONCAT(event_name, ': ', event_id) DESC) AS meta_source_event_id_lst
         , STRING_AGG(meta_source_file_path_lst, ',' ORDER BY meta_source_file_path_lst DESC) AS meta_source_file_path_lst
         , MAX(raw_offset_id) AS raw_offset_id
     FROM ss_batch
@@ -67,7 +67,7 @@ important:
         ss_batch.raw_offset_id
         , ss_batch.payload_cln
         , ss_batch.event_name
-        , ss_batch.event_id AS meta_source_latest_event_id
+        , CONCAT(ss_batch.event_name, ': ', ss_batch.event_id) AS meta_source_latest_event_id
         , ss_batch.meta_source_file_path AS meta_source_latest_file_path
         , ss_latest.meta_source_event_id_lst
         , ss_latest.meta_source_file_path_lst
