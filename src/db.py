@@ -19,8 +19,8 @@ class BatchParameters:
     job_name: str | None = None
     status: str | None = None
     started_at: datetime | None = None
-    from_timestamp_exclusive: str = None
-    to_timestamp_inclusive: str = None
+    from_timestamp_exclusive: str | None = None
+    to_timestamp_inclusive: str | None  = None
     rows_read: int = 0
     rows_written: int = 0
     error_message: str | None = None
@@ -117,7 +117,7 @@ def get_latest_run_id(engine: Engine, envt: str) -> int:
         logger.error(f"Error getting latest run id: {e}")
         raise e
 
-def get_latest_timestamp(engine: Engine, iparams: BatchParameters) -> int:
+def get_latest_timestamp(engine: Engine, iparams: BatchParameters) -> str | None:
     logger.debug(f"Getting latest timestamp id for {iparams.job_name}")
     offset_qry = f"SELECT MAX(to_timestamp_inclusive) FROM meta.pipeline_run WHERE job_name = :job_name AND status = 'success'"
     try:

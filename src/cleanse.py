@@ -126,7 +126,7 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
         params.started_at = datetime.now(UTC)
         params.traceback_message = None
 
-def merge_df(df: pd.DataFrame, partition_by, order_by) -> Tuple[pd.DataFrame, int]:
+def merge_df(df: pd.DataFrame, partition_by, order_by) -> Tuple[pd.DataFrame, str]:
     return df.loc[df[order_by].isin(df.groupby(partition_by)[order_by].max())], df[order_by].max()
 
 
