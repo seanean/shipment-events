@@ -31,15 +31,22 @@
             "mandatory": true
         },
         {
+            "business_name": "Meta Source Timestamp",
+            "technical_name": "meta_source_tmst",
+            "data_type": "TIMESTAMPTZ",
+            "mandatory": true
+        },
+        {
             "business_name": "Meta Insert Timestamp",
-            "technical_name": "meta_insert_timestamp",
+            "technical_name": "meta_insert_tmst",
             "data_type": "TIMESTAMPTZ",
             "mandatory": true
         },
         {
             "business_name": "Meta Updated Timestamp",
-            "technical_name": "meta_updated_timestamp",
-            "data_type": "TIMESTAMPTZ"
+            "technical_name": "meta_updated_tmst",
+            "data_type": "TIMESTAMPTZ",
+            "mandatory": true
         }
     ]
 }

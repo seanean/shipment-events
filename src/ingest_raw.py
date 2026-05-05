@@ -77,18 +77,18 @@ def ingest_raw(data: Literal["shipment_status", "shipment_products"],
     logger.info(f"{data} events rolled back: {events_rolled_back}")
 
     cleanup_pending_lz(config.lz_pending_path)
-    logger.info(f"Pending folder cleanup successful")
+    logger.debug(f"Pending folder cleanup successful")
 
 def get_schema(schema_path: Path) -> dict[str, Any]:
-    logger.info(f"Getting schema from {schema_path}")
+    logger.debug(f"Getting schema from {schema_path}")
     with open(schema_path) as stream:
         schema = json.load(stream)
-        logger.info(f"Schema retrieved successfully")
+        logger.debug(f"Schema retrieved successfully")
         logger.debug(f"Schema: {schema}")
     return schema
 
 def validate_schema(schema: dict[str, Any]) -> Draft202012Validator:
-    logger.info(f"Validating schema")
+    logger.debug(f"Validating schema")
     try:
         Draft202012Validator.check_schema(schema)
         logger.info(f"Schema is valid")
@@ -101,16 +101,16 @@ def validate_schema(schema: dict[str, Any]) -> Draft202012Validator:
     return validator
 
 def get_file(filepath: str) -> dict[str, Any]:
-    logger.info(f"Getting file from {filepath}")
+    logger.debug(f"Getting file from {filepath}")
     with open(filepath, 'r') as f:
         data = json.load(f)
-        logger.info(f"File retrieved successfully")
+        logger.debug(f"File retrieved successfully")
         logger.debug(f"File: {data}")
         return data
 
 def validate_file(file: dict[str, Any], validator: Draft202012Validator) -> None:
     try:
-        logger.info(f"Validating file")
+        logger.debug(f"Validating file")
         validator.validate(instance=file)
         logger.info(f"File is valid")
         logger.debug(f"File: {file}")
@@ -126,46 +126,46 @@ def insert_to_table(engine: Engine, insert_sql_path: Path, target_table: str,
     logger.info(f"Inserting file into {target_table}")
     insert_row = insert_row_builder(target_table, file, source_filepath, 
                                     error_message, traceback_message)                        
-    logger.info(f"Insert row builder successful")
+    logger.debug(f"Insert row builder successful")
     logger.debug(f"Insert row: {insert_row}")
 
-    logger.info(f"Engine retrieved successfully")
+    logger.debug(f"Engine retrieved successfully")
     logger.debug(f"Engine: {engine}")
 
     insert_qry = get_insert_statement(insert_sql_path)
 
     with engine.begin() as conn:
-        logger.info(f"Executing insert query")
+        logger.debug(f"Executing insert query")
         conn.execute(text(insert_qry),insert_row,)
-        logger.info(f"Insert query executed successfully")
+        logger.debug(f"Insert query executed successfully")
 
 def store_file(filename: str, source_filepath: str, target_folder: str) -> None:
     logger.info(f"Moving file {filename} from {source_filepath} to {target_folder}")
     
     if not os.path.exists(target_folder):
-        logger.info(f"Target folder {target_folder} does not exist, creating it")
+        logger.debug(f"Target folder {target_folder} does not exist, creating it")
         os.makedirs(target_folder)
-        logger.info(f"Target folder {target_folder} created successfully")
+        logger.debug(f"Target folder {target_folder} created successfully")
 
     destination_filepath = os.path.join(target_folder, filename)
     shutil.move(source_filepath, destination_filepath)
-    logger.info(f"File {filename} moved successfully to {destination_filepath}")
+    logger.debug(f"File {filename} moved successfully to {destination_filepath}")
 
 def rollback_insert(engine: Engine, target_table: str, source_filepath: str) -> None:
     logger.info(f"Rolling back insert for {target_table}")
     delete_qry = f"DELETE FROM {target_table} WHERE meta_source_file_path = :meta_source_file_path"
     with engine.begin() as conn:
-        logger.info(f"Executing delete query")
+        logger.debug(f"Executing delete query")
         conn.execute(text(delete_qry), {"meta_source_file_path": source_filepath})
-        logger.info(f"Delete query executed successfully")
+        logger.debug(f"Delete query executed successfully")
 
 def cleanup_pending_lz(pending_folder: Path) -> None:
-    logger.info(f"Cleaning up pending folder {pending_folder}")
+    logger.debug(f"Cleaning up pending folder {pending_folder}")
     for dirpath, dirnames, filenames in os.walk(pending_folder, topdown=False):
         if len(os.listdir(dirpath)) == 0:
-            logger.info(f"Pending folder {dirpath} is empty, removing it")
+            logger.debug(f"Pending folder {dirpath} is empty, removing it")
             os.rmdir(dirpath)
-            logger.info(f"Pending folder {dirpath} removed successfully")
+            logger.debug(f"Pending folder {dirpath} removed successfully")
 
 def main() -> None:
     # to be created later when I want to add __init__.py and trigger via cli with args

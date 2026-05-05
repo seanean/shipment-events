@@ -8,7 +8,8 @@ CREATE TABLE [shipment_status] (
     [meta_source_event_id_lst] NVARCHAR(MAX) NOT NULL,
     [meta_source_file_path_lst] NVARCHAR(MAX) NOT NULL,
     [meta_root_business_key] NVARCHAR(MAX) NOT NULL,
-    [meta_insert_timestamp] DATETIMEOFFSET NOT NULL,
-    [meta_updated_timestamp] DATETIMEOFFSET,
+    [meta_source_tmst] DATETIMEOFFSET NOT NULL,
+    [meta_insert_tmst] DATETIMEOFFSET NOT NULL,
+    [meta_updated_tmst] DATETIMEOFFSET NOT NULL,
     PRIMARY KEY ([shipment_status_uuid])
 );

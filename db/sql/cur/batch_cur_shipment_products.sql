@@ -1,12 +1,12 @@
 /*vars to pass in in this order because I'm using psycopg sql.SQL with .format
-params_cur.from_id_exclusive,
+params_cur.from_timestamp_exclusive,
 _CUR_BATCH_SIZE,
 params_cur.run_id,
 params_cur.batch_id,
 params_cur.job_name,
 params_cur.started_at,
-params_cur.latest_raw_offset_id,
-params_cur.from_id_exclusive,
+params_cur.latest_timestamp,
+params_cur.from_timestamp_exclusive,
 params_cur.job_name,
 params_cur.job_name
 */
@@ -22,17 +22,17 @@ WITH sp_batch AS (
     SELECT
         event_id
         , payload_cln->'event_data'->>'shipment_uuid' AS meta_root_business_key
-        , event_timestamp
+        , event_tmst
         , event_name
         , payload_cln
         , raw_offset_id
         , raw_offset_id_lst
-        , meta_insert_timestamp
-        , meta_update_timestamp
+        , meta_insert_tmst
+        , meta_update_tmst
         , meta_source_file_path
         , meta_source_file_path_lst
     FROM cln.shipment_products
-    WHERE raw_offset_id > {}--params_cur.from_id_exclusive
+    WHERE event_tmst > {}--params_cur.from_timestamp_exclusive
     LIMIT {}--_CUR_BATCH_SIZE
 )
 
@@ -47,7 +47,7 @@ per business ID: //Note: for status, we will have to do this per event type, not
         meta_root_business_key
         , STRING_AGG(CONCAT(event_name, ': ', event_id), ',' ORDER BY CONCAT(event_name, ': ', event_id) DESC) AS meta_source_event_id_lst
         , STRING_AGG(meta_source_file_path_lst, ',' ORDER BY meta_source_file_path_lst DESC) AS meta_source_file_path_lst
-        , MAX(raw_offset_id) AS raw_offset_id
+        , MAX(event_tmst) AS event_tmst
     FROM sp_batch
     GROUP BY meta_root_business_key
 )
@@ -56,6 +56,7 @@ per business ID: //Note: for status, we will have to do this per event type, not
 , to_process AS (
     SELECT
         sp_batch.raw_offset_id
+        , sp_batch.event_tmst
         , sp_batch.payload_cln
         , CONCAT(sp_batch.event_name, ': ', sp_batch.event_id) AS meta_source_latest_event_id
         , sp_batch.meta_source_file_path AS meta_source_latest_file_path
@@ -64,7 +65,7 @@ per business ID: //Note: for status, we will have to do this per event type, not
         , sp_batch.meta_root_business_key
     FROM sp_batch
     INNER JOIN sp_latest
-        ON sp_batch.raw_offset_id = sp_latest.raw_offset_id
+        ON sp_batch.event_tmst = sp_latest.event_tmst
 )
 SELECT *
 FROM to_process;
@@ -87,6 +88,7 @@ SELECT
     , sb.meta_source_event_id_lst
     , sb.meta_source_file_path_lst
     , sb.meta_root_business_key
+    , sb.event_tmst as meta_source_tmst
 FROM tmp_sp_batch AS sb;
 
 /*
@@ -105,8 +107,9 @@ INSERT INTO cur.shipment (
     , meta_source_event_id_lst
     , meta_source_file_path_lst
     , meta_root_business_key
-    , meta_insert_timestamp
-    , meta_update_timestamp
+    , meta_source_tmst
+    , meta_insert_tmst
+    , meta_update_tmst
 )
 SELECT
     shipment_uuid
@@ -118,8 +121,9 @@ SELECT
     , meta_source_event_id_lst
     , meta_source_file_path_lst
     , meta_root_business_key
+    , meta_source_tmst
     , NOW()
-    , NULL
+    , NOW()
 FROM tmp_sp_shipment
 ON CONFLICT (shipment_uuid) DO UPDATE SET
     shipment_business_id = excluded.shipment_business_id
@@ -143,7 +147,8 @@ ON CONFLICT (shipment_uuid) DO UPDATE SET
             SELECT UNNEST(STRING_TO_ARRAY(excluded.meta_source_file_path_lst, ',')) AS meta_source_file_path
         ) AS event_ids
     )
-    , meta_update_timestamp = NOW();
+    , meta_source_tmst = excluded.meta_source_tmst
+    , meta_update_tmst = NOW();
 
 /*
 only for review:
@@ -161,6 +166,7 @@ WITH sb_product AS (
         , sb.meta_source_event_id_lst
         , sb.meta_source_file_path_lst
         , sb.meta_root_business_key
+        , sb.event_tmst as meta_source_tmst
     FROM tmp_sp_batch AS sb
 )
 
@@ -174,6 +180,7 @@ SELECT
     , meta_source_event_id_lst
     , meta_source_file_path_lst
     , meta_root_business_key
+    , meta_source_tmst
 FROM sb_product;
 
 /* cur.shipment_product upsert */
@@ -187,8 +194,9 @@ INSERT INTO cur.shipment_product (
     , meta_source_event_id_lst
     , meta_source_file_path_lst
     , meta_root_business_key
-    , meta_insert_timestamp
-    , meta_update_timestamp
+    , meta_source_tmst
+    , meta_insert_tmst
+    , meta_update_tmst
 )
 SELECT
     shipment_product_uuid
@@ -200,8 +208,9 @@ SELECT
     , meta_source_event_id_lst
     , meta_source_file_path_lst
     , meta_root_business_key
+    , meta_source_tmst
     , NOW()
-    , NULL
+    , NOW()
 FROM tmp_sp_shipment_product
 ON CONFLICT (shipment_product_uuid) DO UPDATE SET
     product_id = excluded.product_id
@@ -224,7 +233,8 @@ ON CONFLICT (shipment_product_uuid) DO UPDATE SET
             SELECT UNNEST(STRING_TO_ARRAY(excluded.meta_source_file_path_lst, ',')) AS meta_source_file_path
         ) AS event_ids
     )
-    , meta_update_timestamp = NOW();
+    , meta_source_tmst = excluded.meta_source_tmst
+    , meta_update_tmst = NOW();
 /*
 only for review:
 SELECT * FROM cur.shipment_product;
@@ -246,14 +256,14 @@ INSERT INTO meta.pipeline_run (
         , status
         , started_at
         , finished_at
-        , starting_from_id_exclusive
-        , from_id_exclusive
-        , to_id_inclusive
+        , starting_from_timestamp_exclusive
+        , from_timestamp_exclusive
+        , to_timestamp_inclusive
         , rows_read
         , rows_written
         , error_message
         , traceback_message
-        , meta_insert_timestamp
+        , meta_insert_tmst
     )
     VALUES (
         {}--params_cur.run_id
@@ -262,13 +272,13 @@ INSERT INTO meta.pipeline_run (
         , 'success'
         , {}--params_cur.started_at
         , NOW()--finished_at
-        , {}--params_cur.latest_raw_offset_id
-        , {}--params_cur.from_id_exclusive
-        , (SELECT MAX(raw_offset_id) FROM tmp_sp_batch)--to_id_inclusive
+        , {}--params_cur.latest_timestamp
+        , {}--params_cur.from_timestamp_exclusive
+        , (SELECT MAX(event_tmst) FROM tmp_sp_batch)--to_timestamp_inclusive
         , (SELECT COUNT(1) FROM tmp_sp_batch)--rows_read
         , ((SELECT COUNT(1) FROM tmp_sp_shipment_product)+(SELECT COUNT(1) FROM tmp_sp_shipment))--rows_written
         , NULL--error_message
         , NULL--traceback_message
-        , NOW()--meta_insert_timestamp
+        , NOW()--meta_insert_tmst
     );
 COMMIT;

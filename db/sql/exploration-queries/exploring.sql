@@ -4,6 +4,8 @@ select * from raw.shipment_status;
 select * from raw.shipment_products;
 select * from cln.shipment_status;
 select * from cln.shipment_products;
+select * from cur.shipment;
+
 
 select * from meta.pipeline_run;
 
@@ -51,7 +53,7 @@ SELECT
         SELECT COUNT(1)
         FROM cln.shipment_products
         WHERE raw_offset_id > (
-            SELECT MAX(to_id_inclusive)
+            SELECT MAX(to_timestamp_inclusive)
             FROM meta.pipeline_run 
             WHERE job_name = 'curate_shipment_products_dev'--params_cur.job_name
                 AND status = 'success'
@@ -62,7 +64,7 @@ SELECT
         SELECT COUNT(1)
         FROM cln.shipment_status
         WHERE raw_offset_id > (
-            SELECT MAX(to_id_inclusive)
+            SELECT MAX(to_timestamp_inclusive)
             FROM meta.pipeline_run 
             WHERE job_name = 'curate_shipment_status_dev'--params_cur.job_name
                 AND status = 'success'

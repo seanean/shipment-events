@@ -83,30 +83,30 @@ def test_insert_row_builder_returns_valid_dict(target_table: str) -> None:
     # file based on shipment_status.json schema
     file = {
         "event_id": "123",
-        "event_timestamp": "2026-01-01T00:00:00Z",
+        "event_tmst": "2026-01-01T00:00:00Z",
         "event_name": "shipment_status"
         }
     match target_table:
         case "raw.shipment_status":
             expected_result = {"payload": Jsonb(file), "event_id": file["event_id"],
-                        "event_timestamp": file["event_timestamp"],
+                        "event_tmst": file["event_tmst"],
                         "event_name": file["event_name"],
                         "meta_source_file_path": meta_source_filepath}
         case "raw.shipment_products":
             expected_result = {"payload": Jsonb(file), "event_id": file["event_id"],
-                        "event_timestamp": file["event_timestamp"],
+                        "event_tmst": file["event_tmst"],
                         "event_name": file["event_name"],
                         "meta_source_file_path": meta_source_filepath}
         case "quarantine.shipment_status":
             expected_result = {"payload": Jsonb(file), "event_id": file["event_id"],
-                        "event_timestamp": file["event_timestamp"],
+                        "event_tmst": file["event_tmst"],
                         "event_name": file["event_name"],
                         "error_message": error_message,
                         "traceback_message": traceback_message,
                         "meta_source_file_path": meta_source_filepath}
         case "quarantine.shipment_products":
             expected_result = {"payload": Jsonb(file), "event_id": file["event_id"],
-                        "event_timestamp": file["event_timestamp"],
+                        "event_tmst": file["event_tmst"],
                         "event_name": file["event_name"],
                         "error_message": error_message,
                         "traceback_message": traceback_message,
@@ -133,7 +133,7 @@ def test_insert_row_builder_raises_valueerror_for_unknown_table() -> None:
     traceback_message = "traceback"
     file = {
         "event_id": "123",
-        "event_timestamp": "2026-01-01T00:00:00Z",
+        "event_tmst": "2026-01-01T00:00:00Z",
         "event_name": "shipment_status"
     }
     with pytest.raises(ValueError):

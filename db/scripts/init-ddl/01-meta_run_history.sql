@@ -6,14 +6,14 @@ CREATE TABLE meta.pipeline_run (
     status TEXT NOT NULL CHECK (status IN ('success', 'failed')),
     started_at TIMESTAMPTZ NOT NULL,
     finished_at TIMESTAMPTZ NOT NULL,
-    starting_from_id_exclusive BIGINT NOT NULL,
-    from_id_exclusive BIGINT NOT NULL,
-    to_id_inclusive BIGINT,
+    starting_from_timestamp_exclusive TIMESTAMPTZ NOT NULL,
+    from_timestamp_exclusive TIMESTAMPTZ NOT NULL,
+    to_timestamp_inclusive TIMESTAMPTZ,
     rows_read BIGINT,
     rows_written BIGINT,
     error_message VARCHAR,
     traceback_message VARCHAR,
-    meta_insert_timestamp TIMESTAMPTZ
+    meta_insert_tmst TIMESTAMPTZ
 );
 
 ALTER TABLE meta.pipeline_run OWNER TO shrw;

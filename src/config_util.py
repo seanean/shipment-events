@@ -27,12 +27,12 @@ def get_config(data: str, config_path: Path) -> dict:
     logger.info(f"Getting config for {data} from {config_path}")
     with open(config_path) as stream:
         config: dict = yaml.safe_load(stream)
-        logger.info(f"Config retrieved successfully")
+        logger.debug(f"Config retrieved successfully")
         logger.debug(f"Config for {data}: {config[data]}")
     return config[data]
 
 def resolve_config(loaded_config: dict[str, Any]) -> ResolvedConfig:
-    logger.info(f"Resolving config for loaded_config")
+    logger.debug(f"Resolving config for loaded_config")
     return ResolvedConfig(
         lz_pending_path=_REPO_ROOT_PATH / loaded_config['lz_pending_path'],
         lz_archive_path=_REPO_ROOT_PATH / loaded_config['lz_archive_path'],

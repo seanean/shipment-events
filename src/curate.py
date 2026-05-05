@@ -8,7 +8,7 @@ from db import (
     insert_pipeline_batch_run,
     get_batch,
     get_latest_run_id,
-    get_latest_raw_offset_id,
+    get_latest_timestamp,
     BatchParameters,
 )
 from sqlalchemy import text
@@ -51,8 +51,8 @@ def curate(
     logger.info(f'Latest run ID: {params_cur.latest_run_id}, current run ID: {params_cur.run_id}')
 
     # what cln data do we start from?
-    params_cur.latest_raw_offset_id = get_latest_raw_offset_id(engine, params_cur)
-    params_cur.from_id_exclusive = params_cur.latest_raw_offset_id
+    params_cur.latest_timestamp = get_latest_timestamp(engine, params_cur)
+    params_cur.from_timestamp_exclusive = params_cur.latest_timestamp
 
     # get insert statement
     insert_qry = get_insert_statement(config.cur_insert_sql_path)
@@ -60,17 +60,17 @@ def curate(
     while True:
         try:
             with engine.begin() as conn:
-                logger.info(f'Executing insert query')
+                logger.debug(f'Executing insert query')
                 # run batch
                 composed = sql.SQL(insert_qry).format(
-                    params_cur.from_id_exclusive,
+                    params_cur.from_timestamp_exclusive,
                     _CUR_BATCH_SIZE,
                     params_cur.run_id,
                     params_cur.batch_id,
                     params_cur.job_name,
                     params_cur.started_at,
-                    params_cur.latest_raw_offset_id,
-                    params_cur.from_id_exclusive,
+                    params_cur.latest_timestamp,
+                    params_cur.from_timestamp_exclusive,
                     params_cur.job_name,
                     params_cur.job_name,
                 )
@@ -87,8 +87,8 @@ def curate(
                         check_qry = text("""
                                 SELECT COUNT(1)
                                 FROM cln.shipment_status
-                                WHERE raw_offset_id > (
-                                    SELECT MAX(to_id_inclusive)
+                                WHERE event_tmst > (
+                                    SELECT MAX(to_timestamp_inclusive)
                                     FROM meta.pipeline_run 
                                     WHERE job_name = :job_name
                                         AND status = 'success'
@@ -96,8 +96,8 @@ def curate(
                     case "shipment_products":
                         check_qry = text("""SELECT COUNT(1)
                                 FROM cln.shipment_products
-                                WHERE raw_offset_id > (
-                                    SELECT MAX(to_id_inclusive)
+                                WHERE event_tmst > (
+                                    SELECT MAX(to_timestamp_inclusive)
                                     FROM meta.pipeline_run 
                                     WHERE job_name = :job_name
                                         AND status = 'success'
@@ -125,7 +125,7 @@ def curate(
             raise e
         # prepare for next loop iteration
         params_cur.batch_id += 1
-        params_cur.from_id_exclusive = get_latest_raw_offset_id(engine, params_cur)
+        params_cur.from_timestamp_exclusive = get_latest_timestamp(engine, params_cur)
         params_cur.rows_read = 0
         params_cur.rows_written = 0
         params_cur.error_message = None

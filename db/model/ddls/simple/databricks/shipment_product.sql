@@ -8,6 +8,7 @@ CREATE TABLE shipment_product (
     meta_source_event_id_lst STRING NOT NULL,
     meta_source_file_path_lst STRING NOT NULL,
     meta_root_business_key STRING NOT NULL,
-    meta_insert_timestamp TIMESTAMP NOT NULL,
-    meta_updated_timestamp TIMESTAMP
+    meta_source_tmst TIMESTAMP NOT NULL,
+    meta_insert_tmst TIMESTAMP NOT NULL,
+    meta_updated_tmst TIMESTAMP NOT NULL
 );

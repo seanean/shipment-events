@@ -273,6 +273,8 @@ Phase 4 stuff:
 
 It took a lot of time to land on how I wanted to do curated because of endlessly changing my mind on meta fields and trying to decide on how I wanted to handle upserting / replacing / orphans. Ultimately I went with a SCD1 flow (latest event is the truth) + some visibility on the past via meta fields.
 
+**I forgot** event_ids can be the same across each event. my event_ids list isn't correct as shipment status 1 will be treated the same as shipment product. fixed to concat event id + event type.
+
 ### Learnings
 
 | Topic | Learning |
@@ -286,6 +288,10 @@ It took a lot of time to land on how I wanted to do curated because of endlessly
 |Handling failed batches|If an insert of a batch to cur fails, my transaction won't continue to the `insert pipeline run history` step, so I'll have to detect if it failed and insert that failure manually. Because I'm using SQLAlchemy with psycopg, it raises its own exceptions (i.e. sqlalchemy.exc.SQLAlchemyError) instead of feeding the [psycopg errors](https://www.psycopg.org/psycopg3/docs/api/errors.html#db-api-exceptions) directly. So, I need to catch the sqlalchemy exceptions (or just exception in general), if I want to detect when batches fail. If caught, then I can trigger the pipeline failed insert. | 
 
 
+## Phase 4.5 - Curated based on timestamps
+
+I built phase 4 using raw_offset_id. I decided to swap this to event timestamp as it will mesh better with dbt incremental.
+
 ## Phase 5 - dbt
 
 ## Did
@@ -297,9 +303,8 @@ It took a lot of time to land on how I wanted to do curated because of endlessly
     - user setup to prevent access conflicts (ctr vs local)
     - Docker network mode for efficient x-container communication
     - dbt profile setup
-
-Next: time to dive into learning dbt.
-
+- watched a ton of the fundamentals courses on dbt learn.
+- drafted an initial dbt design and am diving into it with AI to determine what the migration would really need (i.e. how is state tracked - can i keep using my pipeline-run table? how do i handle my complex merge logic for my lst columns?)
 
 ## Learned
 
@@ -310,3 +315,4 @@ Next: time to dive into learning dbt.
 |dbt profiles|They're a bit like .env files in that they often contain secrets and are not committed. I'm just inheriting the env vars from my .env so I _will_ be committing mine.|
 |dbt / dbt-postgres Docker files|The images pushed don't seem to align with the newest version of dbt-postgres on pypi. Maybe I'm misunderstanding something. I decided to just build my own Dockerfile based on the existing one + updating to Trixie (+ upgrading debian packages), using dbt-core 1.10.20 and dbt-postgres 1.10.|
 |dbt folder setup on container| ending up with: `Docker compose run --rm -it -w /usr/app dbt-svc init shipment_events` so project is under /usr/app. setting `working_dir` in compose to `/usr/app/shipment_events` leads to dbt commands executing successfully. i'm also doing something _kind of_ weird by binding profiles to `/usr/app/profiles/profiles.yml` which mean it ends up within my dbt project folder (even though it's not a project-level file). w/e though, it's not a big deal. |
+|dbt fundamentals| learned a lot of stuff from the following trainings, notes in my private learnings repo to help me use the knowledge [dbt fundamentals, materialization fundamentals, incremental models, jinja macros packages, analyses and seeds, exposure, advanced testing, snapshots] |
