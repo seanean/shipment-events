@@ -1,20 +1,14 @@
 {
     "fields": [
         {
-            "business_name": "Meta Source Latest Event Identifier",
-            "technical_name": "meta_source_latest_event_id",
-            "data_type": "VARCHAR",
-            "mandatory": true
-        },
-        {
             "business_name": "Meta Source Latest File Path",
             "technical_name": "meta_source_latest_file_path",
             "data_type": "VARCHAR",
             "mandatory": true
         },
         {
-            "business_name": "Meta Source Event Identifier List",
-            "technical_name": "meta_source_event_id_lst",
+            "business_name": "Meta Source Event Types",
+            "technical_name": "meta_source_event_type_lst",
             "data_type": "VARCHAR",
             "mandatory": true
         },

@@ -24,6 +24,7 @@ WITH sp_batch AS (
         , payload_cln->'event_data'->>'shipment_uuid' AS meta_root_business_key
         , event_tmst
         , event_name
+        , 'shipment_product' AS event_type
         , payload_cln
         , raw_offset_id
         , raw_offset_id_lst
@@ -45,7 +46,6 @@ per business ID: //Note: for status, we will have to do this per event type, not
 , sp_latest AS (
     SELECT
         meta_root_business_key
-        , STRING_AGG(CONCAT(event_name, ': ', event_id), ',' ORDER BY CONCAT(event_name, ': ', event_id) DESC) AS meta_source_event_id_lst
         , STRING_AGG(meta_source_file_path_lst, ',' ORDER BY meta_source_file_path_lst DESC) AS meta_source_file_path_lst
         , MAX(event_tmst) AS event_tmst
     FROM sp_batch
@@ -58,9 +58,8 @@ per business ID: //Note: for status, we will have to do this per event type, not
         sp_batch.raw_offset_id
         , sp_batch.event_tmst
         , sp_batch.payload_cln
-        , CONCAT(sp_batch.event_name, ': ', sp_batch.event_id) AS meta_source_latest_event_id
         , sp_batch.meta_source_file_path AS meta_source_latest_file_path
-        , sp_latest.meta_source_event_id_lst
+        , sp_batch.event_type AS meta_source_event_type_lst
         , sp_latest.meta_source_file_path_lst
         , sp_batch.meta_root_business_key
     FROM sp_batch
@@ -83,9 +82,8 @@ SELECT
     , sb.payload_cln->'event_data'->>'shipment_business_id' AS shipment_business_id
     , sb.payload_cln->'event_data'->>'shipment_id' AS shipment_technical_id
     , sb.payload_cln->'event_data'->>'shipment_type' AS shipment_type
-    , sb.meta_source_latest_event_id
     , sb.meta_source_latest_file_path
-    , sb.meta_source_event_id_lst
+    , sb.meta_source_event_type_lst
     , sb.meta_source_file_path_lst
     , sb.meta_root_business_key
     , sb.event_tmst as meta_source_tmst
@@ -102,9 +100,8 @@ INSERT INTO cur.shipment (
     , shipment_business_id
     , shipment_technical_id
     , shipment_type
-    , meta_source_latest_event_id
     , meta_source_latest_file_path
-    , meta_source_event_id_lst
+    , meta_source_event_type_lst
     , meta_source_file_path_lst
     , meta_root_business_key
     , meta_source_tmst
@@ -116,9 +113,8 @@ SELECT
     , shipment_business_id
     , shipment_technical_id
     , shipment_type
-    , meta_source_latest_event_id
     , meta_source_latest_file_path
-    , meta_source_event_id_lst
+    , meta_source_event_type_lst
     , meta_source_file_path_lst
     , meta_root_business_key
     , meta_source_tmst
@@ -129,15 +125,14 @@ ON CONFLICT (shipment_uuid) DO UPDATE SET
     shipment_business_id = excluded.shipment_business_id
     , shipment_technical_id = excluded.shipment_technical_id
     , shipment_type = excluded.shipment_type
-    , meta_source_latest_event_id = excluded.meta_source_latest_event_id
     , meta_source_latest_file_path = excluded.meta_source_latest_file_path
-    , meta_source_event_id_lst = (
-        SELECT STRING_AGG(event_ids.meta_source_event_id, ',' ORDER BY meta_source_event_id DESC) AS meta_source_event_id_lst
+    , meta_source_event_type_lst = (
+        SELECT STRING_AGG(event_names.meta_source_event_type, ',' ORDER BY meta_source_event_type DESC) AS meta_source_event_type_lst
         FROM (
-            SELECT UNNEST(STRING_TO_ARRAY(cur.shipment.meta_source_event_id_lst, ',')) AS meta_source_event_id
+            SELECT UNNEST(STRING_TO_ARRAY(cur.shipment.meta_source_event_type_lst, ',')) AS meta_source_event_type
             UNION
-            SELECT UNNEST(STRING_TO_ARRAY(excluded.meta_source_event_id_lst, ',')) AS meta_source_event_id
-        ) AS event_ids
+            SELECT UNNEST(STRING_TO_ARRAY(excluded.meta_source_event_type_lst, ',')) AS meta_source_event_type
+        ) AS event_names
     )
     , meta_source_file_path_lst = (
         SELECT STRING_AGG(event_ids.meta_source_file_path, ',' ORDER BY meta_source_file_path DESC) AS meta_source_file_path_lst
@@ -161,9 +156,8 @@ WITH sb_product AS (
     SELECT
         jsonb_array_elements(sb.payload_cln->'event_data'->'products') AS product
         , sb.meta_root_business_key AS shipment_uuid
-        , sb.meta_source_latest_event_id
         , sb.meta_source_latest_file_path
-        , sb.meta_source_event_id_lst
+        , sb.meta_source_event_type_lst
         , sb.meta_source_file_path_lst
         , sb.meta_root_business_key
         , sb.event_tmst as meta_source_tmst
@@ -175,9 +169,8 @@ SELECT
     , shipment_uuid
     , product->>'product_id' AS product_id
     , (product->>'product_quantity')::integer AS product_qty
-    , meta_source_latest_event_id
     , meta_source_latest_file_path
-    , meta_source_event_id_lst
+    , meta_source_event_type_lst
     , meta_source_file_path_lst
     , meta_root_business_key
     , meta_source_tmst
@@ -189,9 +182,8 @@ INSERT INTO cur.shipment_product (
     , shipment_uuid
     , product_id
     , product_qty
-    , meta_source_latest_event_id
     , meta_source_latest_file_path
-    , meta_source_event_id_lst
+    , meta_source_event_type_lst
     , meta_source_file_path_lst
     , meta_root_business_key
     , meta_source_tmst
@@ -203,9 +195,8 @@ SELECT
     , shipment_uuid
     , product_id
     , product_qty
-    , meta_source_latest_event_id
     , meta_source_latest_file_path
-    , meta_source_event_id_lst
+    , meta_source_event_type_lst
     , meta_source_file_path_lst
     , meta_root_business_key
     , meta_source_tmst
@@ -215,16 +206,8 @@ FROM tmp_sp_shipment_product
 ON CONFLICT (shipment_product_uuid) DO UPDATE SET
     product_id = excluded.product_id
     , product_qty = excluded.product_qty
-    , meta_source_latest_event_id = excluded.meta_source_latest_event_id
     , meta_source_latest_file_path = excluded.meta_source_latest_file_path
-    , meta_source_event_id_lst = (
-        SELECT STRING_AGG(event_ids.meta_source_event_id, ',' ORDER BY meta_source_event_id DESC) AS meta_source_event_id_lst
-        FROM (
-            SELECT UNNEST(STRING_TO_ARRAY(cur.shipment_product.meta_source_event_id_lst, ',')) AS meta_source_event_id
-            UNION
-            SELECT UNNEST(STRING_TO_ARRAY(excluded.meta_source_event_id_lst, ',')) AS meta_source_event_id
-        ) AS event_ids
-    )
+    , meta_source_event_type_lst = excluded.meta_source_event_type_lst
     , meta_source_file_path_lst = (
         SELECT STRING_AGG(event_ids.meta_source_file_path, ',' ORDER BY meta_source_file_path DESC) AS meta_source_file_path_lst
         FROM (
