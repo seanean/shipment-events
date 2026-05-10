@@ -1,12 +1,12 @@
 /*vars to pass in in this order because I'm using psycopg sql.SQL with .format
-params_cur.from_timestamp_exclusive,
+params_cur.from_id_exclusive,
 _CUR_BATCH_SIZE,
 params_cur.run_id,
 params_cur.batch_id,
 params_cur.job_name,
 params_cur.started_at,
-params_cur.latest_timestamp,
-params_cur.from_timestamp_exclusive,
+params_cur.latest_raw_offset_id,
+params_cur.from_id_exclusive,
 params_cur.job_name,
 params_cur.job_name
 */
@@ -28,13 +28,14 @@ WITH sp_batch AS (
         , meta_update_tmst
         , meta_source_file_path
         , meta_source_file_path_lst
+        , raw_offset_id
     FROM cln.shipment_products
-    WHERE event_tmst > {}--params_cur.from_timestamp_exclusive
+    WHERE raw_offset_id > {}--params_cur.from_id_exclusive
     LIMIT {}--_CUR_BATCH_SIZE
 )
 
 /*
-per business ID: //Note: for status, we will have to do this per event type, not just root key.
+per business ID:
 1) find newest offset
 2) concatenate file paths
 3) concatenate event IDs
@@ -43,7 +44,7 @@ per business ID: //Note: for status, we will have to do this per event type, not
     SELECT
         meta_root_business_key
         , STRING_AGG(meta_source_file_path_lst, ',' ORDER BY meta_source_file_path_lst DESC) AS meta_source_file_path_lst
-        , MAX(event_tmst) AS event_tmst
+        , MAX(raw_offset_id) AS raw_offset_id
     FROM sp_batch
     GROUP BY meta_root_business_key
 )
@@ -57,15 +58,13 @@ per business ID: //Note: for status, we will have to do this per event type, not
         , sp_batch.event_type AS meta_source_event_type_lst
         , sp_latest.meta_source_file_path_lst
         , sp_batch.meta_root_business_key
-        , ROW_NUMBER() OVER (PARTITION BY sp_batch.meta_root_business_key ORDER BY sp_batch.event_tmst, sp_batch.meta_update_tmst DESC) AS rn
+        , sp_batch.raw_offset_id
     FROM sp_batch
     INNER JOIN sp_latest
-        ON sp_batch.event_tmst = sp_latest.event_tmst
+        ON sp_batch.raw_offset_id = sp_latest.raw_offset_id
 )
 SELECT *
-FROM to_process
-WHERE rn = 1;--added row_number to prevent multiple records in cases of >1 event w/ same tmst.
-
+FROM to_process;
 
 /*
 only for review:
@@ -236,9 +235,9 @@ INSERT INTO meta.pipeline_run (
         , status
         , started_at
         , finished_at
-        , starting_from_timestamp_exclusive
-        , from_timestamp_exclusive
-        , to_timestamp_inclusive
+        , starting_from_id_exclusive
+        , from_id_exclusive
+        , to_id_inclusive
         , rows_read
         , rows_written
         , error_message
@@ -252,9 +251,9 @@ INSERT INTO meta.pipeline_run (
         , 'success'
         , {}--params_cur.started_at
         , NOW()--finished_at
-        , {}--params_cur.latest_timestamp
-        , {}--params_cur.from_timestamp_exclusive
-        , (SELECT MAX(event_tmst) FROM tmp_sp_batch)--to_timestamp_inclusive
+        , {}--params_cur.latest_raw_offset_id
+        , {}--params_cur.from_id_exclusive
+        , (SELECT MAX(raw_offset_id) FROM tmp_sp_batch)--to_id_inclusive
         , (SELECT COUNT(1) FROM tmp_sp_batch)--rows_read
         , ((SELECT COUNT(1) FROM tmp_sp_shipment_product)+(SELECT COUNT(1) FROM tmp_sp_shipment))--rows_written
         , NULL--error_message

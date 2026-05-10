@@ -6,7 +6,7 @@ import pandas as pd
 
 from db import (
     get_latest_run_id, 
-    get_latest_timestamp, 
+    get_latest_raw_offset_id, 
     get_batch, 
     BatchParameters
 )
@@ -90,47 +90,30 @@ def test_get_latest_run_id() -> None:
         conn.execute(text("INSERT INTO meta.pipeline_run (run_id) VALUES (1), (5)"))
     assert get_latest_run_id(engine, "dev") == 5
 
-def test_get_latest_timestamp_success() -> None:
+def test_get_latest_raw_offset_id_success() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     with engine.begin() as conn:
         conn.execute(text("ATTACH DATABASE ':memory:' AS meta"))
-        conn.execute(text("CREATE TABLE meta.pipeline_run (to_timestamp_inclusive INTEGER, job_name TEXT, status TEXT)"))
+        conn.execute(text("CREATE TABLE meta.pipeline_run (to_id_inclusive INTEGER, job_name TEXT, status TEXT)"))
         conn.execute(text("""INSERT INTO meta.pipeline_run
-                                (to_timestamp_inclusive, job_name, status)
+                                (to_id_inclusive, job_name, status)
                             VALUES
                                 (2, 'bob', 'success')
                                 , (3, 'bob', 'failed')
                                 , (5, 'job', 'success')"""))
     
     params = BatchParameters(job_name='bob')
-    assert get_latest_timestamp(engine, params) == 2
+    assert get_latest_raw_offset_id(engine, params) == 2
 
 
 def test_get_batch_returns_df_and_rows() -> None:
     engine = create_engine("sqlite+pysqlite:///:memory:")
     with engine.begin() as conn:
         conn.execute(text("ATTACH DATABASE ':memory:' AS raw"))
-        conn.execute(
-            text(
-                """CREATE TABLE raw.shipment_status (
-                        offset_id INTEGER, 
-                        event_id TEXT,
-                        event_tmst TIMESTAMP,
-                        insert_tmst TIMESTAMP,
-                        update_tmst TIMESTAMP
-                    )"""
-            )
-        )
-        conn.execute(
-            text(
-                """INSERT INTO raw.shipment_status (offset_id, event_id, event_tmst, insert_tmst, update_tmst)
-                   VALUES 
-                       (1, 'e1', '2024-01-01 10:00:00','2024-01-01 10:00:00', NULL), 
-                       (2, 'e2', '2024-01-01 10:10:00','2024-01-01 10:10:00', '2024-01-02 11:00:00'), 
-                       (4, 'e3', '2024-01-01 10:20:00','2024-01-01 10:20:00', NULL)"""
-            )
-        )
-    params = BatchParameters(from_timestamp_exclusive='2024-01-01 10:00:00')
+        conn.execute(text("CREATE TABLE raw.shipment_status (offset_id INTEGER, event_id TEXT)"))
+        conn.execute(text("""INSERT INTO raw.shipment_status (offset_id, event_id)
+                             VALUES (1, 'e1'), (2, 'e2'), (4, 'e3')"""))
+    params = BatchParameters(from_id_exclusive=1)
     df, row_count = get_batch(engine, "raw.shipment_status", "dev", params, batch_size=2)
     assert isinstance(df, pd.DataFrame)
     assert row_count == 2

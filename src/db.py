@@ -13,14 +13,14 @@ import pandas as pd
 @dataclass(frozen=False)
 class BatchParameters:
     latest_run_id: int | None = None
-    latest_timestamp: str | None = None
+    latest_raw_offset_id: int | None = 0
     run_id: int | None = None
     batch_id: int = 1
     job_name: str | None = None
     status: str | None = None
     started_at: datetime | None = None
-    from_timestamp_exclusive: str | None = None
-    to_timestamp_inclusive: str | None  = None
+    from_id_exclusive: int = 0
+    to_id_inclusive: int = 0
     rows_read: int = 0
     rows_written: int = 0
     error_message: str | None = None
@@ -123,20 +123,20 @@ def get_latest_run_id(engine: Engine, envt: str) -> int:
         logger.error(f"Error getting latest run id: {e}")
         raise e
 
-def get_latest_timestamp(engine: Engine, iparams: BatchParameters) -> str | None:
-    logger.debug(f"Getting latest timestamp id for {iparams.job_name}")
-    offset_qry = f"SELECT MAX(to_timestamp_inclusive) FROM meta.pipeline_run WHERE job_name = :job_name AND status = 'success'"
+def get_latest_raw_offset_id(engine: Engine, iparams: BatchParameters) -> int:
+    logger.debug(f"Getting latest raw offset id for {iparams.job_name}")
+    offset_qry = f"SELECT MAX(to_id_inclusive) FROM meta.pipeline_run WHERE job_name = :job_name AND status = 'success'"
     try:
         with engine.begin() as conn:
-            logger.debug(f"Retrieving latest timestamp")
+            logger.debug(f"Retrieving latest raw offset id")
             row = conn.execute(text(offset_qry), {"job_name": iparams.job_name}).fetchone()
             assert row is not None # because of fetchone() return type making mypy sad
             result = row[0]
-            latest_timestamp = result if result is not None else '1900-01-01 00:00:00'
-            logger.info(f"Latest timestamp for {iparams.job_name}: {latest_timestamp}")
-            return latest_timestamp
+            latest_offset_id = result if result is not None else 0
+            logger.info(f"Latest raw offset id for {iparams.job_name}: {latest_offset_id}")
+            return latest_offset_id
     except Exception as e:
-        logger.error(f"Error getting latest timestamp: {e}")
+        logger.error(f"Error getting latest raw offset id: {e}")
         try:
             iparams.status = 'failed'
             iparams.error_message = str(e)
@@ -153,36 +153,36 @@ def insert_pipeline_batch_run(engine: Engine, iparams: BatchParameters):
                         run_id, batch_id, 
                         job_name, status,
                         started_at, finished_at,
-                        starting_from_timestamp_exclusive, from_timestamp_exclusive,
-                        to_timestamp_inclusive, rows_read,
+                        starting_from_id_exclusive, from_id_exclusive,
+                        to_id_inclusive, rows_read,
                         rows_written, error_message,
                         traceback_message, meta_insert_tmst)
                     VALUES (
                         :run_id, :batch_id,
                         :job_name, :status,
                         :started_at, NOW(),
-                        :starting_from_timestamp_exclusive, :from_timestamp_exclusive,
-                        :to_timestamp_inclusive, :rows_read,
+                        :starting_from_id_exclusive, :from_id_exclusive,
+                        :to_id_inclusive, :rows_read,
                         :rows_written, :error_message,
                         :traceback_message, NOW())"""
     with engine.begin() as conn:
         conn.execute(text(insert_qry), {"run_id": iparams.run_id, "batch_id": iparams.batch_id,
                                         "job_name": iparams.job_name, "status": iparams.status,
                                         "started_at": iparams.started_at,
-                                        "starting_from_timestamp_exclusive": iparams.latest_timestamp, "from_timestamp_exclusive": iparams.from_timestamp_exclusive,
-                                        "to_timestamp_inclusive": iparams.to_timestamp_inclusive, "rows_read": iparams.rows_read,
+                                        "starting_from_id_exclusive": iparams.latest_raw_offset_id, "from_id_exclusive": iparams.from_id_exclusive,
+                                        "to_id_inclusive": iparams.to_id_inclusive, "rows_read": iparams.rows_read,
                                         "rows_written": iparams.rows_written, "error_message": iparams.error_message,
                                         "traceback_message": iparams.traceback_message})
 
 
 def get_batch(engine: Engine, source_table: str, envt: str, 
                   iparams: BatchParameters, batch_size: int) -> Tuple[pd.DataFrame, int]:
-    event_tmst = iparams.from_timestamp_exclusive
-    logger.info(f"Getting batch of {batch_size} records from {source_table} in {envt} environment from {event_tmst}")
-    batch_qry = f'SELECT * FROM {source_table} WHERE event_tmst > :event_tmst LIMIT :batch_size'
+    offset_id = iparams.from_id_exclusive
+    logger.info(f"Getting batch from {source_table} in {envt} environment from {offset_id} to {offset_id + batch_size}")
+    batch_qry = f'SELECT * FROM {source_table} WHERE offset_id > :offset_id LIMIT :batch_size'
     try:
         with engine.begin() as conn:
-            result = conn.execute(text(batch_qry), {"event_tmst": event_tmst, "batch_size": batch_size})
+            result = conn.execute(text(batch_qry), {"offset_id": offset_id, "batch_size": batch_size})
             rows = result.fetchall()
             columns = result.keys()
             df = pd.DataFrame(rows, columns=columns)

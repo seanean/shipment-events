@@ -7,7 +7,7 @@ from db import (
     get_insert_statement, 
     insert_row_builder, 
     get_latest_run_id, 
-    get_latest_timestamp, 
+    get_latest_raw_offset_id, 
     BatchParameters, 
     insert_pipeline_batch_run,
     get_batch
@@ -49,8 +49,8 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
     logger.info(f"Latest run ID: {params.latest_run_id}, current run ID: {params.run_id}")
 
     # what raw data do we start from?
-    params.latest_timestamp = get_latest_timestamp(engine, params)
-    params.from_timestamp_exclusive = params.latest_timestamp
+    params.latest_raw_offset_id = get_latest_raw_offset_id(engine, params)
+    params.from_id_exclusive = params.latest_raw_offset_id
 
     # get insert statement
     insert_qry = get_insert_statement(config.cln_insert_sql_path)
@@ -61,12 +61,12 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
         if batch_df.empty:
             logger.info(f'Batch is empty, exiting')
             params.status = 'success'
-            params.to_timestamp_inclusive = params.from_timestamp_exclusive # latest success will still have same to_id
+            params.to_id_inclusive = params.from_id_exclusive # latest success will still have same to_id
             insert_pipeline_batch_run(engine, params)
             break
 
-        # get latest per event timestamp
-        batch_df_merged, params.to_timestamp_inclusive = merge_df(batch_df, partition_by="event_id", order_by="event_tmst")
+        # get latest per event ID.
+        batch_df_merged, params.to_id_inclusive = merge_df(batch_df, partition_by="event_id", order_by="offset_id")
 
         # converting to dict because df.apply is not vectorized and list comprehensions should be faster
         batch_dict_list = batch_df_merged.to_dict(orient="records")
@@ -119,14 +119,14 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
 
         # prepare for next loop iteration
         params.batch_id +=1
-        params.from_timestamp_exclusive = params.to_timestamp_inclusive
+        params.from_id_exclusive = params.to_id_inclusive
         params.rows_read = 0
         params.rows_written = 0
         params.error_message = None
         params.started_at = datetime.now(UTC)
         params.traceback_message = None
 
-def merge_df(df: pd.DataFrame, partition_by, order_by) -> Tuple[pd.DataFrame, str]:
+def merge_df(df: pd.DataFrame, partition_by, order_by) -> Tuple[pd.DataFrame, int]:
     return df.loc[df[order_by].isin(df.groupby(partition_by)[order_by].max())], df[order_by].max()
 
 
