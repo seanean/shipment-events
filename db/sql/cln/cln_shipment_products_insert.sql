@@ -32,4 +32,11 @@ ON CONFLICT (event_id) DO UPDATE SET
     event_name = excluded.event_name,
     meta_update_tmst = NOW(),
     meta_source_file_path = excluded.meta_source_file_path,
-    meta_source_file_path_lst = concat_ws(',', excluded.meta_source_file_path, cln.shipment_products.meta_source_file_path)
+    meta_source_file_path_lst = (
+        SELECT STRING_AGG(file_paths.meta_source_file_path, ',' ORDER BY meta_source_file_path DESC) AS meta_source_file_path_lst
+        FROM (
+            SELECT UNNEST(STRING_TO_ARRAY(cln.shipment_products.meta_source_file_path_lst, ',')) AS meta_source_file_path
+            UNION
+            SELECT UNNEST(STRING_TO_ARRAY(excluded.meta_source_file_path_lst, ',')) AS meta_source_file_path
+        ) AS file_paths
+    )
