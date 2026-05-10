@@ -9,5 +9,5 @@ CREATE TABLE [shipment] (
     [meta_root_business_key] NVARCHAR(MAX) NOT NULL,
     [meta_source_tmst] DATETIMEOFFSET NOT NULL,
     [meta_insert_tmst] DATETIMEOFFSET NOT NULL,
-    [meta_updated_tmst] DATETIMEOFFSET NOT NULL
+    [meta_update_tmst] DATETIMEOFFSET NOT NULL
 );

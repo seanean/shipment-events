@@ -9,6 +9,6 @@ CREATE TABLE shipment_product (
     meta_root_business_key TEXT NOT NULL,
     meta_source_tmst TEXT NOT NULL,
     meta_insert_tmst TEXT NOT NULL,
-    meta_updated_tmst TEXT NOT NULL,
+    meta_update_tmst TEXT NOT NULL,
     PRIMARY KEY (shipment_product_uuid)
 );

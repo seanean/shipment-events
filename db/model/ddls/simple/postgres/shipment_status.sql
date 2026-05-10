@@ -9,5 +9,5 @@ CREATE TABLE shipment_status (
     meta_root_business_key TEXT NOT NULL,
     meta_source_tmst TIMESTAMPTZ NOT NULL,
     meta_insert_tmst TIMESTAMPTZ NOT NULL,
-    meta_updated_tmst TIMESTAMPTZ NOT NULL
+    meta_update_tmst TIMESTAMPTZ NOT NULL
 );
