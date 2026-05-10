@@ -57,12 +57,14 @@ per business ID: //Note: for status, we will have to do this per event type, not
         , sp_batch.event_type AS meta_source_event_type_lst
         , sp_latest.meta_source_file_path_lst
         , sp_batch.meta_root_business_key
+        , ROW_NUMBER() OVER (PARTITION BY sp_batch.meta_root_business_key ORDER BY ss_batch.event_tmst, ss_batch.meta_update_tmst DESC) AS rn
     FROM sp_batch
     INNER JOIN sp_latest
         ON sp_batch.event_tmst = sp_latest.event_tmst
 )
 SELECT *
-FROM to_process;
+FROM to_process
+WHERE rn = 1;--added row_number to prevent multiple records in cases of >1 event w/ same tmst.
 
 
 /*

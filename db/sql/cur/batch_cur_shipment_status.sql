@@ -70,13 +70,15 @@ important:
         , ss_batch.event_type AS meta_source_event_type_lst
         , ss_latest.meta_source_file_path_lst
         , ss_batch.meta_root_business_key
+        , ROW_NUMBER() OVER (PARTITION BY ss_batch.meta_root_business_key, ss_batch.event_name ORDER BY ss_batch.event_tmst, ss_batch.meta_update_tmst DESC) AS rn
     FROM ss_batch
     INNER JOIN ss_latest
         ON ss_batch.event_tmst = ss_latest.event_tmst
             AND ss_batch.event_name = ss_latest.event_name
 )
 SELECT *
-FROM to_process;
+FROM to_process
+WHERE rn = 1;--added row_number to prevent multiple records in cases of >1 event w/ same tmst, name.
 
 
 /*
