@@ -52,7 +52,7 @@ def get_insert_statement(insert_sql_path: Path) -> str:
         logger.debug(f"Insert query: {insert_qry}")
         return insert_qry
 
-def insert_row_builder(target_table: str, content: dict[str, Any],
+def insert_row_builder(event_type: str, target_table: str, content: dict[str, Any],
                        meta_source_filepath: str, error_message: str | None = None,
                        traceback_message: str | None = None, ) -> dict[str, Any]:
     logger.info(f"Building insert row for {target_table}")
@@ -63,16 +63,19 @@ def insert_row_builder(target_table: str, content: dict[str, Any],
             return {"payload": Jsonb(content), "event_id": content["event_id"],
                         "event_tmst": content["event_timestamp"],
                         "event_name": content["event_name"],
+                        "event_type": event_type,
                         "meta_source_file_path": meta_source_filepath}
         case "raw.shipment_products":
             return {"payload": Jsonb(content), "event_id": content["event_id"],
                         "event_tmst": content["event_timestamp"],
                         "event_name": content["event_name"],
+                        "event_type": event_type,
                         "meta_source_file_path": meta_source_filepath}
         case "quarantine.shipment_status":
             return {"payload": Jsonb(content), "event_id": content["event_id"],
                         "event_tmst": content["event_timestamp"],
                         "event_name": content["event_name"],
+                        "event_type": event_type,
                         "error_message": error_message,
                         "traceback_message": traceback_message,
                         "meta_source_file_path": meta_source_filepath}
@@ -80,6 +83,7 @@ def insert_row_builder(target_table: str, content: dict[str, Any],
             return {"payload": Jsonb(content), "event_id": content["event_id"],
                         "event_tmst": content["event_timestamp"],
                         "event_name": content["event_name"],
+                        "event_type": event_type,
                         "error_message": error_message,
                         "traceback_message": traceback_message,
                         "meta_source_file_path": meta_source_filepath}
@@ -87,6 +91,7 @@ def insert_row_builder(target_table: str, content: dict[str, Any],
             return {"payload_cln": Jsonb(content["payload_cln"]), "event_id": content["event_id"],
                         "event_tmst": content["event_tmst"],
                         "event_name": content["event_name"],
+                        "event_type": event_type,
                         "raw_offset_id": content["offset_id"],
                         "meta_update_tmst": None,
                         "meta_source_file_path": meta_source_filepath}
@@ -94,6 +99,7 @@ def insert_row_builder(target_table: str, content: dict[str, Any],
             return {"payload_cln": Jsonb(content["payload_cln"]), "event_id": content["event_id"],
                         "event_tmst": content["event_tmst"],
                         "event_name": content["event_name"],
+                        "event_type": event_type,
                         "raw_offset_id": content["offset_id"],
                         "meta_update_tmst": None,
                         "meta_source_file_path": meta_source_filepath}

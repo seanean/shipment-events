@@ -3,6 +3,7 @@ CREATE TABLE raw.shipment_products (
     event_id VARCHAR NOT NULL,
     event_tmst TIMESTAMPTZ NOT NULL,
     event_name VARCHAR NOT NULL,
+    event_type VARCHAR NOT NULL,
     payload JSONB NOT NULL,
     meta_insert_tmst TIMESTAMPTZ NOT NULL,
     meta_source_file_path VARCHAR NOT NULL

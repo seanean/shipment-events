@@ -77,7 +77,7 @@ def cleanse(data: Literal["shipment_status", "shipment_products"],
 
         # prepare cln insert
         insert_rows = [
-            insert_row_builder(
+            insert_row_builder(event_type=data,
                 target_table=config.cln_target_table,
                 content=cast(dict[str, Any], row),
                 meta_source_filepath=row["meta_source_file_path"],

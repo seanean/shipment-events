@@ -20,14 +20,11 @@ SELECT * FROM cln.shipment_status;
 CREATE TEMP TABLE tmp_ss_batch ON COMMIT DROP AS
 WITH ss_batch AS (
     SELECT
-        event_id
-        , payload_cln->'event_data'->>'shipment_uuid' AS meta_root_business_key
+        payload_cln->'event_data'->>'shipment_uuid' AS meta_root_business_key
         , event_tmst
         , event_name
-        , 'shipment_status' AS event_type
+        , event_type
         , payload_cln
-        , raw_offset_id
-        , raw_offset_id_lst
         , meta_insert_tmst
         , meta_update_tmst
         , meta_source_file_path
@@ -38,7 +35,7 @@ WITH ss_batch AS (
 )
 
 /*
-per business ID: //Note: for status, we will have to do this per event type, not just root key.
+per business ID: //Note: for status, we will have to do this per event name (status type), not just root key.
 1) find newest offset
 2) concatenate file paths
 3) concatenate event IDs
@@ -66,8 +63,7 @@ important:
 
 , to_process AS (
     SELECT
-        ss_batch.raw_offset_id
-        , ss_batch.payload_cln
+        ss_batch.payload_cln
         , ss_batch.event_name
         , ss_batch.event_tmst
         , ss_batch.meta_source_file_path AS meta_source_latest_file_path
@@ -208,10 +204,10 @@ SELECT
     , NOW()
 FROM tmp_ss_shipment_status
 ON CONFLICT (shipment_status_uuid) DO UPDATE SET
-    shipment_status = excluded.shipment_status--shouldn't happen
+    shipment_status = excluded.shipment_status
     , shipment_status_tmst = excluded.shipment_status_tmst
     , meta_source_latest_file_path = excluded.meta_source_latest_file_path
-    , meta_source_event_type_lst = excluded.meta_source_event_type_lst
+    , meta_source_event_type_lst = excluded.meta_source_event_type_lst--only shipment_status populates this table
     , meta_source_file_path_lst = (
         SELECT STRING_AGG(file_paths.meta_source_file_path, ',' ORDER BY meta_source_file_path DESC) AS meta_source_file_path_lst
         FROM (

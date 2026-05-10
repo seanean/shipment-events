@@ -116,14 +116,14 @@ def test_get_batch_returns_df_and_rows() -> None:
                         offset_id INTEGER, 
                         event_id TEXT,
                         event_tmst TIMESTAMP,
-                        insert_timestamp TIMESTAMP,
-                        update_timestamp TIMESTAMP
+                        insert_tmst TIMESTAMP,
+                        update_tmst TIMESTAMP
                     )"""
             )
         )
         conn.execute(
             text(
-                """INSERT INTO raw.shipment_status (offset_id, event_id, event_tmst, insert_timestamp, update_timestamp)
+                """INSERT INTO raw.shipment_status (offset_id, event_id, event_tmst, insert_tmst, update_tmst)
                    VALUES 
                        (1, 'e1', '2024-01-01 10:00:00','2024-01-01 10:00:00', NULL), 
                        (2, 'e2', '2024-01-01 10:10:00','2024-01-01 10:10:00', '2024-01-02 11:00:00'), 

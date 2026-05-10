@@ -20,14 +20,10 @@ SELECT * FROM cln.shipment_products;
 CREATE TEMP TABLE tmp_sp_batch ON COMMIT DROP AS
 WITH sp_batch AS (
     SELECT
-        event_id
-        , payload_cln->'event_data'->>'shipment_uuid' AS meta_root_business_key
+        payload_cln->'event_data'->>'shipment_uuid' AS meta_root_business_key
         , event_tmst
-        , event_name
-        , 'shipment_product' AS event_type
+        , event_type
         , payload_cln
-        , raw_offset_id
-        , raw_offset_id_lst
         , meta_insert_tmst
         , meta_update_tmst
         , meta_source_file_path
@@ -55,8 +51,7 @@ per business ID: //Note: for status, we will have to do this per event type, not
 /* populate temp_sp_batch: events to upsert to cur in original format */
 , to_process AS (
     SELECT
-        sp_batch.raw_offset_id
-        , sp_batch.event_tmst
+        sp_batch.event_tmst
         , sp_batch.payload_cln
         , sp_batch.meta_source_file_path AS meta_source_latest_file_path
         , sp_batch.event_type AS meta_source_event_type_lst
@@ -127,12 +122,12 @@ ON CONFLICT (shipment_uuid) DO UPDATE SET
     , shipment_type = excluded.shipment_type
     , meta_source_latest_file_path = excluded.meta_source_latest_file_path
     , meta_source_event_type_lst = (
-        SELECT STRING_AGG(event_names.meta_source_event_type, ',' ORDER BY meta_source_event_type DESC) AS meta_source_event_type_lst
+        SELECT STRING_AGG(event_types.meta_source_event_type, ',' ORDER BY meta_source_event_type DESC) AS meta_source_event_type_lst
         FROM (
             SELECT UNNEST(STRING_TO_ARRAY(cur.shipment.meta_source_event_type_lst, ',')) AS meta_source_event_type
             UNION
             SELECT UNNEST(STRING_TO_ARRAY(excluded.meta_source_event_type_lst, ',')) AS meta_source_event_type
-        ) AS event_names
+        ) AS event_types
     )
     , meta_source_file_path_lst = (
         SELECT STRING_AGG(event_ids.meta_source_file_path, ',' ORDER BY meta_source_file_path DESC) AS meta_source_file_path_lst
@@ -207,7 +202,7 @@ ON CONFLICT (shipment_product_uuid) DO UPDATE SET
     product_id = excluded.product_id
     , product_qty = excluded.product_qty
     , meta_source_latest_file_path = excluded.meta_source_latest_file_path
-    , meta_source_event_type_lst = excluded.meta_source_event_type_lst
+    , meta_source_event_type_lst = excluded.meta_source_event_type_lst--only shipment_products populates this table
     , meta_source_file_path_lst = (
         SELECT STRING_AGG(event_ids.meta_source_file_path, ',' ORDER BY meta_source_file_path DESC) AS meta_source_file_path_lst
         FROM (

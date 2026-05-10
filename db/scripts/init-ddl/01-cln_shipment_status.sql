@@ -2,6 +2,7 @@ CREATE TABLE cln.shipment_status (
     event_id VARCHAR NOT NULL PRIMARY KEY,
     event_tmst TIMESTAMPTZ NOT NULL,
     event_name VARCHAR NOT NULL,
+    event_type VARCHAR NOT NULL,
     payload_cln JSONB NOT NULL,
     raw_offset_id BIGINT NOT NULL,
     raw_offset_id_lst VARCHAR NOT NULL,

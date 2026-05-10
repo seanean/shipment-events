@@ -48,7 +48,7 @@ def ingest_raw(data: Literal["shipment_status", "shipment_products"],
                 validate_file(pending_file, validator)
             except ValidationError as e:
                 # flow for invalid data
-                insert_to_table(engine, config.quarantine_insert_sql_path, config.quarantine_target_table, pending_file,
+                insert_to_table(engine, data, config.quarantine_insert_sql_path, config.quarantine_target_table, pending_file,
                                 pending_filepath, str(e), traceback.format_exc())
                 quarantine_folder = os.path.join(config.lz_quarantine_path, pending_dt_partition)
                 try:
@@ -61,7 +61,7 @@ def ingest_raw(data: Literal["shipment_status", "shipment_products"],
                 continue
 
             # flow for valid data
-            insert_to_table(engine, config.raw_insert_sql_path, config.raw_target_table, pending_file, pending_filepath)
+            insert_to_table(engine, data, config.raw_insert_sql_path, config.raw_target_table, pending_file, pending_filepath)
             archive_folder = os.path.join(config.lz_archive_path, pending_dt_partition)
             try:
                 store_file(filename, pending_filepath, archive_folder)
@@ -120,11 +120,11 @@ def validate_file(file: dict[str, Any], validator: Draft202012Validator) -> None
         raise e
 
 
-def insert_to_table(engine: Engine, insert_sql_path: Path, target_table: str, 
+def insert_to_table(engine: Engine, data:str, insert_sql_path: Path, target_table: str, 
                     file: dict[str, Any], source_filepath: str, error_message: str | None = None, 
                     traceback_message: str | None = None) -> None:
     logger.info(f"Inserting file into {target_table}")
-    insert_row = insert_row_builder(target_table, file, source_filepath, 
+    insert_row = insert_row_builder(data, target_table, file, source_filepath, 
                                     error_message, traceback_message)                        
     logger.debug(f"Insert row builder successful")
     logger.debug(f"Insert row: {insert_row}")

@@ -2,6 +2,7 @@ INSERT INTO cln.shipment_status (
     event_id,
     event_tmst,
     event_name,
+    event_type,
     payload_cln,
     raw_offset_id,
     raw_offset_id_lst,
@@ -14,6 +15,7 @@ VALUES (
     :event_id,
     :event_tmst,
     :event_name,
+    :event_type,
     :payload_cln,
     :raw_offset_id,
     :raw_offset_id,
@@ -28,6 +30,7 @@ ON CONFLICT (event_id) DO UPDATE SET
     raw_offset_id_lst = concat_ws(',', excluded.raw_offset_id, cln.shipment_status.raw_offset_id_lst),
     event_tmst = excluded.event_tmst,
     event_name = excluded.event_name,
+    event_type = excluded.event_type,
     meta_update_tmst = NOW(),
     meta_source_file_path = excluded.meta_source_file_path,
     meta_source_file_path_lst = concat_ws(',', excluded.meta_source_file_path, cln.shipment_status.meta_source_file_path)
