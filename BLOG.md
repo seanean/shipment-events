@@ -292,6 +292,10 @@ It took a lot of time to land on how I wanted to do curated because of endlessly
 
 I built phase 4 using raw_offset_id. I decided to swap this to event timestamp as it will mesh better with dbt incremental.
 
+Silly me. While I do need timestamp for dbt incremental, if you have >1 payload with the same event tmst, batching can break.
+
+Looks like my approach with the offset IDs for batching _was_ better.
+
 ## Phase 5 - dbt
 
 ## Did

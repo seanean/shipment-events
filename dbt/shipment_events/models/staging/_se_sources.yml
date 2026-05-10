@@ -1,0 +1,7 @@
+sources:
+  - name: shipment_events_cln
+    database: shipments
+    schema: cln
+    tables:
+      - name: shipment_products
+      - name: shipment_status
