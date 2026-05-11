@@ -2,7 +2,8 @@
     config(
         materialized='table',
         unique_key=['meta_root_business_key', 'event_name'],
-        incremental_strategy='merge'
+        incremental_strategy='merge',
+        schema='stg'
     )
 }}
 

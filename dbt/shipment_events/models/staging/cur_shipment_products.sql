@@ -3,6 +3,7 @@
         materialized='table',
         unique_key='shipment_product_uuid',
         incremental_strategy='merge',
+        schema='cur',
         post_hook="
             DELETE FROM {{ this }} AS existing
             WHERE existing.meta_root_business_key IN (

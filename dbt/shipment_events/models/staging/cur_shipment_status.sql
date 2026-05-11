@@ -2,7 +2,8 @@
     config(
         materialized='table',
         unique_key='shipment_status_uuid',
-        incremental_strategy='merge'
+        incremental_strategy='merge',
+        schema='cur'
     )
 }}
 
