@@ -310,21 +310,31 @@ It took a lot of time to land on how I wanted to do curated because of endlessly
     - all incremental
     - shipment_products with a post-hook to delete orphan records
         - not convinced it's the most elegant way (my python approach was better), but it checks if result NOT IN stage, where stage maintains current version per root key.
+- tried out codegen
+    - regenerated my cln sources using it (handy to not type column names!)
+- put my models in the right schemas + updated init scripts
+    - turns out your project schema is a prefix if you want to specify schemas on models specifically (project: dbt, model: cur, result: dbt_cur)
+- configuration
+    - checked out the [options](https://docs.getdbt.com/reference/model-configs)
+    - added indexes
+        - cur: pks, fks
+        - stg: raw_offset_id (used in incremental logic)
+    - correct update columns on merge (don't update the insert tmst, update everything else tho.)
+- incremental testing:
+    - added some new make commands to facilitate testing incremental logic by moving in 2 additional files after the first run
+    - `make increment`
+- dbt commands
+    - added a bunch to facilitate running
+    - `make dbtrun` - run dbt models via a Docker Compose dbt service
+    - `make dbtdeps` - install dbt dependencies using Docker Compose
+    - `make dbtmakeclnsrc` - regenerate dbt sources with a dbt run-operation inside the container
+- freshness
+    - not going to add for now
+
 
 # to do
-- put my models in the right schemas
-    - add stg schema to my init scripts + manage access
-- try out codegen?
 - tests
-    - to write
-- configuration
-    - will check out what options there are
-- increment & orphan testing
-    - added some payloads for sp that i can copy > raw > cleanse > dbt to check if things are working
-    - should add for shipment status
-    - should add to make commands to automate this
-- setup quoting rules
-- freshness (just for practice)
+    - will add once i have shipment working.
 
 
 ## Learned
