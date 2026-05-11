@@ -1,0 +1,19 @@
+models:
+  - name: cur_shipment_products
+    description: Curated shipment_products data.
+    columns:
+      - name: shipment_product_uuid
+        data_tests:
+          - not_null
+          - unique
+      - name: shipment_uuid
+      - name: product_id
+      - name: product_qty
+      - name: meta_source_latest_file_path
+      - name: meta_source_event_type_lst
+      - name: meta_source_file_path_lst
+      - name: meta_root_business_key
+      - name: meta_source_tmst
+      - name: meta_insert_tmst
+      - name: meta_update_tmst
+      - name: meta_raw_offset_id

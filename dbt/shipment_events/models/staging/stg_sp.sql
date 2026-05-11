@@ -1,13 +1,13 @@
 {{
     config(
         materialized='table',
-        unique_key=['meta_root_business_key', 'event_name'],
+        unique_key='meta_root_business_key',
         incremental_strategy='merge'
     )
 }}
 
 --pull in (relevant) records from CLN table.
-WITH ss_cln as (
+WITH sp_cln as (
     SELECT 
         payload_cln->'event_data'->>'shipment_uuid' AS meta_root_business_key
         , event_tmst
@@ -17,7 +17,7 @@ WITH ss_cln as (
         , meta_source_file_path AS meta_source_latest_file_path
         , meta_source_file_path_lst
         , raw_offset_id
-    FROM {{ source('shipment_events_cln', 'shipment_status') }}
+    FROM {{ source('shipment_events_cln', 'shipment_products') }}
     -- inc? only pull in new records
     {% if is_incremental() %}
         WHERE raw_offset_id >= (SELECT max(raw_offset_id) FROM {{ this }})
@@ -26,7 +26,7 @@ WITH ss_cln as (
 
 --inc? get records matching root keys in increment to append file paths
 {% if is_incremental() %}
-, ss_cln_and_matching_results AS (
+, sp_cln_and_matching_results AS (
     SELECT
         result.meta_root_business_key
         , result.event_tmst
@@ -37,48 +37,45 @@ WITH ss_cln as (
         , result.meta_source_file_path_lst
         , result.raw_offset_id
     FROM {{ this }} AS result
-    INNER JOIN ss_cln
-        ON ss_cln.meta_root_business_key = result.meta_root_business_key
+    INNER JOIN sp_cln
+        ON sp_cln.meta_root_business_key = result.meta_root_business_key
     UNION ALL
-    SELECT * FROM ss_cln
+    SELECT * FROM sp_cln
 )
 {% endif %}
 
 --get max raw_offset_id and append file paths based on...
     --full: cln
     --inc: cln increment + matching result records
-, ss_grouped AS (
+, sp_grouped AS (
     SELECT
         meta_root_business_key
-        , event_name
         , STRING_AGG(meta_source_file_path_lst, ',' ORDER BY meta_source_file_path_lst DESC) AS meta_source_file_path_lst
         , MAX(raw_offset_id) AS raw_offset_id
     FROM
     {% if is_incremental() %}
-        ss_cln_and_matching_results
+        sp_cln_and_matching_results
     {% else %}
-        ss_cln
+        sp_cln
     {% endif %}
     GROUP BY
         meta_root_business_key
-        , event_name
 )
 
 --take the newest rows + full path list to insert or merge 
-, ss_latest AS (
+, sp_latest AS (
     SELECT
-        ss_cln.payload_cln
-        , ss_cln.event_name
-        , ss_cln.event_tmst
-        , ss_cln.meta_source_latest_file_path
-        , ss_cln.meta_source_event_type_lst
-        , ss_grouped.meta_source_file_path_lst
-        , ss_cln.meta_root_business_key
-        , ss_cln.raw_offset_id
-    FROM ss_cln
-    INNER JOIN ss_grouped
-        ON ss_cln.raw_offset_id = ss_grouped.raw_offset_id
-            AND ss_cln.event_name = ss_grouped.event_name
+        sp_cln.payload_cln
+        , sp_cln.event_name
+        , sp_cln.event_tmst
+        , sp_cln.meta_source_latest_file_path
+        , sp_cln.meta_source_event_type_lst
+        , sp_grouped.meta_source_file_path_lst
+        , sp_cln.meta_root_business_key
+        , sp_cln.raw_offset_id
+    FROM sp_cln
+    INNER JOIN sp_grouped
+        ON sp_cln.raw_offset_id = sp_grouped.raw_offset_id
 )
 SELECT *
-FROM ss_latest
+FROM sp_latest

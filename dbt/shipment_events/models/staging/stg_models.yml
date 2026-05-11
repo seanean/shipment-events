@@ -1,0 +1,29 @@
+models:
+  - name: stg_sp
+    description: Incremental load of shipment_products data from cln.
+    columns:
+      - name: payload_cln
+      - name: event_name
+      - name: event_tmst
+      - name: meta_source_latest_file_path
+      - name: meta_source_event_type_lst
+      - name: meta_source_file_path_lst
+      - name: meta_root_business_key
+      - name: raw_offset_id
+        data_tests:
+          - not_null
+          - unique
+  - name: stg_ss
+    description: Incremental load of shipment_status data from cln.
+    columns:
+      - name: payload_cln
+      - name: event_name
+      - name: event_tmst
+      - name: meta_source_latest_file_path
+      - name: meta_source_event_type_lst
+      - name: meta_source_file_path_lst
+      - name: meta_root_business_key
+      - name: raw_offset_id
+        data_tests:
+          - not_null
+          - unique

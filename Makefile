@@ -66,5 +66,5 @@ run:
 rerun:
 	make resetall && make composeup && make raw && make cleanse && make curate
 
-dbttest:
+dbt:
 	docker compose -f compose.yaml -f compose.dbt.yaml run --rm -it dbt-svc run
