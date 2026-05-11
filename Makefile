@@ -1,4 +1,22 @@
-.PHONY: setup raw test
+.PHONY: setup raw test increment resetlz resetall restore-incremental-lz
+
+# Copied to archive by `make increment`; on reset, moved back from archive before archive→pending.
+INCREMENTAL_LZ_FILES := \
+	shipment_products/dt=2026-04-05/products_example_e7_sh3.json \
+	shipment_products/dt=2026-04-05/products_example_e6_sh2.json \
+	shipment_products/dt=2026-04-05/products_example_e8_sh6.json
+
+restore-incremental-lz:
+	@for p in $(INCREMENTAL_LZ_FILES); do \
+		if [ -f "landing-zone/archive/$$p" ]; then \
+			mkdir -p "landing-zone/to-incrementally-move-in/$$(dirname $$p)"; \
+			rsync -a --remove-source-files "landing-zone/archive/$$p" "landing-zone/to-incrementally-move-in/$$(dirname $$p)/"; \
+		fi; \
+	done
+
+increment:
+	rsync -a --remove-source-files landing-zone/to-incrementally-move-in/ landing-zone/pending/
+	make raw && make cleanse && make curate
 
 setup:
 	python3 -m venv .venv
@@ -37,15 +55,12 @@ composedown:
 
 resetall: # clean up the db and reset LZ
 	docker compose down && docker volume rm shipment-events_postgres_data
-	rsync -a landing-zone/archive/ landing-zone/pending/
-	rm -rf landing-zone/archive/*
-	rsync -a landing-zone/quarantine/ landing-zone/pending/
-	rm -rf landing-zone/quarantine/*
+	$(MAKE) resetlz
 
 resetdb: # clean up the db
 	docker compose down && docker volume rm shipment-events_postgres_data
 
-resetlz: # reset LZ
+resetlz: restore-incremental-lz # reset LZ
 	rsync -a landing-zone/archive/ landing-zone/pending/
 	rm -rf landing-zone/archive/*
 	rsync -a landing-zone/quarantine/ landing-zone/pending/
