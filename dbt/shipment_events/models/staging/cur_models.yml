@@ -17,3 +17,22 @@ models:
       - name: meta_insert_tmst
       - name: meta_update_tmst
       - name: meta_raw_offset_id
+
+  - name: cur_shipment_status
+    description: Curated shipment_status data.
+    columns:
+      - name: shipment_status_uuid
+        data_tests:
+          - not_null
+          - unique
+      - name: shipment_uuid
+      - name: shipment_status
+      - name: shipment_status_tmst
+      - name: meta_source_latest_file_path
+      - name: meta_source_event_type_lst
+      - name: meta_source_file_path_lst
+      - name: meta_root_business_key
+      - name: meta_source_tmst
+      - name: meta_insert_tmst
+      - name: meta_update_tmst
+      - name: meta_raw_offset_id
