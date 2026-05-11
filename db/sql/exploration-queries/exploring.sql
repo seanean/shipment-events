@@ -7,9 +7,15 @@ select * from cln.shipment_status;
 
 select * from cln.shipment_products;
 select * from cur.shipment;
+
+--dbt tables
 select * from cur.stg_ss;
+select * from cur.stg_sp;
+select * from cur.cur_shipment_products;
+select * from cur.cur_shipment_status;
 
 
+--meta
 select * from meta.pipeline_run;
 
 --string cat, for cln
