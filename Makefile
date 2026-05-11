@@ -66,5 +66,11 @@ run:
 rerun:
 	make resetall && make composeup && make raw && make cleanse && make curate
 
-dbt:
+dbtrun:
 	docker compose -f compose.yaml -f compose.dbt.yaml run --rm -it dbt-svc run
+
+dbtdeps:
+	docker compose -f compose.yaml -f compose.dbt.yaml run --rm -it dbt-svc deps
+
+dbtmakeclnsrc:
+	docker compose -f compose.yaml -f compose.dbt.yaml run --rm -it dbt-svc run-operation generate_source --args '{"schema_name": "cln", "generate_columns": true}'
