@@ -1,9 +1,11 @@
 {{
     config(
-        materialized='table',
+        materialized='incremental',
         unique_key='shipment_status_uuid',
         incremental_strategy='merge',
-        schema='cur'
+        merge_update_columns = ['shipment_status_uuid', 'shipment_uuid', 'shipment_status', 'shipment_status_tmst', 'meta_source_latest_file_path', 'meta_source_event_type_lst', 'meta_source_file_path_lst', 'meta_root_business_key', 'meta_source_tmst', 'meta_update_tmst', 'meta_raw_offset_id'],
+        schema='cur',
+        indexes=[{'columns': ['shipment_status_uuid'], 'unique': True}]
     )
 }}
 
@@ -22,5 +24,5 @@ SELECT
         , NOW() AS meta_update_tmst
 FROM {{ ref('stg_ss') }} AS stg_ss
 {% if is_incremental() %}
-    WHERE stg_ss.meta_raw_offset_id > (SELECT MAX(meta_raw_offset_id) FROM {{ this }})
+    WHERE stg_ss.raw_offset_id > (SELECT MAX(meta_raw_offset_id) FROM {{ this }})
 {% endif %}

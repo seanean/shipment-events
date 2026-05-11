@@ -4,16 +4,26 @@ select * from raw.shipment_status;
 
 select * from raw.shipment_products;
 select * from cln.shipment_status;
-
 select * from cln.shipment_products;
+
 select * from cur.shipment;
+select * from cur.shipment_status;
+select * from cur.shipment_product;
+135656
 
 --dbt tables
-select * from cur.stg_ss;
-select * from cur.stg_sp;
-select * from cur.cur_shipment_products;
-select * from cur.cur_shipment_status;
+select * from dbt_stg.stg_ss;
+select * from dbt_stg.stg_sp;
+select * from dbt_cur.cur_shipment_products;
+select * from dbt_cur.cur_shipment_status;
+select * from dbt_cur.cur_shipment;
 
+
+SELECT has_database_privilege('shrw', current_database(), 'CONNECT');
+
+select schema_name
+from information_schema.schemata
+;
 
 --meta
 select * from meta.pipeline_run;
@@ -92,3 +102,88 @@ select a.x from a
 ;
 select * from tmp_yolo;
 commit;
+
+
+
+--testing logic for string agg for dbt
+create temp table test_dbt (
+  event_type_lst text,
+  path_lst text,
+  shipment_uuid int,
+  meta_source_tmst timestamp
+);
+
+insert into test_dbt (event_type_lst, path_lst, shipment_uuid, meta_source_tmst) values
+  ('event1,event2', 'path1,path2', 1, '2025-12-05'),
+  ('event1', 'path1', 1, '2025-12-01'),
+  ('event2', 'path2', 1, '2025-12-01'),
+  ('event2', 'path2', 2, '2025-12-01'),
+  ('event3', 'path3', 2, '2025-12-05');
+
+select * from test_dbt;
+
+
+
+-- select string_agg(x,',' order by x desc)
+-- from(
+select distinct unnest(string_to_array(test_dbt.event_type_lst,',')) as event_type, shipment_uuid
+from test_dbt;
+-- );
+
+
+
+select string_agg(event_types,',' order by event_types asc)
+from (
+select distinct unnest(string_to_array(test_dbt.event_type_lst,',')) as event_types
+from test_dbt
+);
+
+
+
+select string_agg(event_types,',' order by event_types asc), string_agg(path_lst,',' order by path_lst asc), shipment_uuid
+from (
+    select distinct
+        unnest(string_to_array(test_dbt.event_type_lst,',')) as event_types
+        , unnest(string_to_array(test_dbt.path_lst,',')) as path_lst
+        , test_dbt.shipment_uuid
+    from test_dbt
+)
+group by shipment_uuid;
+
+
+create temp table test_dbt2 (
+  meta_source_event_type_lst text,
+  meta_source_file_path_lst text,
+  shipment_uuid int
+);
+
+insert into test_dbt2 (meta_source_event_type_lst, meta_source_file_path_lst, shipment_uuid) values
+  ('status,product', 'path1,path2', 1),
+  ('status', 'path1', 1),
+  ('product', 'path2', 1),
+  ('status', 'path2', 2),
+  ('product', 'path3', 2),
+  ('status,product', 'path4', 3),
+  ('product,status', 'path5', 3);
+
+select * from test_dbt2;
+
+    SELECT
+        STRING_AGG(meta_source_event_type_lst,',' ORDER BY meta_source_event_type_lst ASC) AS meta_source_event_type_lst
+        , STRING_AGG(meta_source_file_path_lst,',' ORDER BY meta_source_file_path_lst ASC) AS meta_source_file_path_lst
+        , shipment_uuid
+    FROM (
+        SELECT DISTINCT
+            UNNEST(string_to_array(shipment_input.meta_source_event_type_lst,',')) AS meta_source_event_type_lst
+            , UNNEST(string_to_array(shipment_input.meta_source_file_path_lst,',')) AS meta_source_file_path_lst
+            , shipment_input.shipment_uuid
+        FROM test_dbt2 AS shipment_input
+    )
+    GROUP BY shipment_uuid;
+
+    
+        SELECT DISTINCT
+            UNNEST(string_to_array(shipment_input.meta_source_event_type_lst,',')) AS meta_source_event_type_lst
+            , UNNEST(string_to_array(shipment_input.meta_source_file_path_lst,',')) AS meta_source_file_path_lst
+            , shipment_input.shipment_uuid
+        FROM test_dbt2 AS shipment_input;

@@ -1,9 +1,11 @@
 {{
     config(
-        materialized='table',
+        materialized='incremental',
         unique_key='shipment_product_uuid',
         incremental_strategy='merge',
+        merge_update_columns = ['shipment_product_uuid', 'shipment_uuid', 'product_id', 'product_qty', 'meta_source_latest_file_path', 'meta_source_event_type_lst', 'meta_source_file_path_lst', 'meta_root_business_key', 'meta_source_tmst', 'meta_update_tmst', 'meta_raw_offset_id'],
         schema='cur',
+        indexes=[{'columns': ['shipment_product_uuid'], 'unique': True}],
         post_hook="
             DELETE FROM {{ this }} AS existing
             WHERE existing.meta_root_business_key IN (
@@ -33,7 +35,7 @@ WITH stg_sp_to_array AS (
         , stg_sp.raw_offset_id AS meta_raw_offset_id
     FROM {{ ref('stg_sp') }} AS stg_sp
     {% if is_incremental() %}
-    WHERE stg_sp.meta_raw_offset_id > (SELECT MAX(meta_raw_offset_id) FROM {{ this }})
+    WHERE stg_sp.raw_offset_id > (SELECT MAX(meta_raw_offset_id) FROM {{ this }})
     {% endif %}
 )
 

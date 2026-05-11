@@ -1,9 +1,12 @@
 {{
     config(
-        materialized='table',
+        materialized='incremental',
         unique_key=['meta_root_business_key', 'event_name'],
         incremental_strategy='merge',
-        schema='stg'
+        schema='stg',
+        indexes=[
+            {'columns': ['raw_offset_id'], 'unique': True}
+        ]
     )
 }}
 

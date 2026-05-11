@@ -1,9 +1,12 @@
 {{
     config(
-        materialized='table',
+        materialized='incremental',
         unique_key='meta_root_business_key',
         incremental_strategy='merge',
-        schema='stg'
+        schema='stg',
+        indexes=[
+            {'columns': ['raw_offset_id'], 'unique': True}
+        ]
     )
 }}
 
@@ -74,6 +77,7 @@ WITH sp_cln as (
         , sp_grouped.meta_source_file_path_lst
         , sp_cln.meta_root_business_key
         , sp_cln.raw_offset_id
+        , NOW() AS meta_insert_tmst
     FROM sp_cln
     INNER JOIN sp_grouped
         ON sp_cln.raw_offset_id = sp_grouped.raw_offset_id
