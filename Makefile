@@ -85,7 +85,7 @@ dbtrun:
 	docker compose -f compose.yaml -f compose.dbt.yaml run --rm dbt-svc run
 
 dbtbuild:
-	docker compose -f compose.yaml -f compose.dbt.yaml run --rm dbt-svc build --debug 2>&1
+	docker compose -f compose.yaml -f compose.dbt.yaml run --rm dbt-svc build
 
 dbtdeps:
 	docker compose -f compose.yaml -f compose.dbt.yaml run --rm dbt-svc deps
