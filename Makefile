@@ -1,4 +1,4 @@
-.PHONY: setup raw test increment resetlz resetall restore-incremental-lz
+.PHONY: setup raw test increment resetlz resetall restore-incremental-lz generate
 
 # Copied to archive by `make increment`; on reset, moved back from archive before archive→pending.
 INCREMENTAL_LZ_FILES := \
@@ -34,6 +34,12 @@ raw: # check if python exists and is executable
 	fi
 	.venv/bin/python src/ingest_raw.py
 
+generate:
+	@if [ ! -x ".venv/bin/python" ]; then \
+		echo "Run 'make setup' first."; exit 1; \
+	fi
+	.venv/bin/python src/event-gen.py
+
 cleanse: # check if python exists and is executable
 	@if [ ! -x ".venv/bin/python" ]; then \
 		echo "Run 'make setup' first."; exit 1; \
@@ -65,6 +71,7 @@ resetlz: restore-incremental-lz # reset LZ
 	rm -rf landing-zone/archive/*
 	rsync -a landing-zone/quarantine/ landing-zone/pending/
 	rm -rf landing-zone/quarantine/*
+	find landing-zone -type f -name '000*' -delete
 
 test:
 	@if [ ! -x ".venv/bin/python" ]; then \
