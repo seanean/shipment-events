@@ -54,7 +54,7 @@ Want to read about the project? Check the [project blog](BLOG.md).
 Some stuff I thought worth pointing out in the project (not everything):
 ```
 project-structure/
-├── Makefile         # venv, docker, raw/cleanse pipelines, tests, type checks
+├── Makefile         # venv, docker, pipelines, dbt, tests, type checks
 ├── config/          # yaml for reusability (preparing for different environments maybe?)
 ├── db /              
 │   └── model        # curated (silver) model
@@ -78,14 +78,23 @@ project-structure/
 
 - `make raw` — run raw ingestion (`src/ingest_raw.py`)
 - `make cleanse` — run cleanse pipeline (`src/cleanse.py`)
+- `make curate` — run curated layer (`src/curate.py`)
+- `make increment` — move files from `landing-zone/to-incrementally-move-in/` to `pending/`, then `raw`, `cleanse`, `curate`
 - `make run` — `composeup`, then `raw`, then `cleanse`, then `curate` (full stack in order)
 - `make rerun` — `resetall`, then same as `run` (clean DB + LZ, then full pipeline)
 
 **Reset local state**
 
-- `make resetall` — tear down DB volume, move archive and quarantine back into `landing-zone/pending`
+- `make resetall` — tear down Postgres data volume, then run `resetlz` (DB + landing zone)
 - `make resetdb` — tear down DB volume only
-- `make resetlz` — move archive and quarantine back into `landing-zone/pending`
+- `make resetlz` — restore incremental sample files from `landing-zone/archive/` into `landing-zone/to-incrementally-move-in/`, sync `archive/` and `quarantine/` back into `landing-zone/pending/`, then clear archive and quarantine
+
+**dbt** (uses `compose.yaml` + `compose.dbt.yaml`; Postgres should be up, e.g. `make composeup`)
+
+- `make dbtrun` — `dbt run` in the dbt service container
+- `make dbtbuild` — `dbt build`
+- `make dbtdeps` — `dbt deps`
+- `make dbtmakeclnsrc` — `dbt run-operation generate_source` for schema `cln` (column metadata)
 
 **Checks**
 
@@ -95,9 +104,31 @@ project-structure/
 
 ## Version Updates
 
-### Phase 5 - dbt: Cleansed -> Curated 2026-04-26
+### Phase 5 - dbt: Cleansed -> Curated 2026-05-12
 
-WIP
+dbt has been implemented!
+- dbt run via docker container
+- src ymls generated with codegen
+- stg models per source event
+- cur models per target table
+  - different from python: a single model for shipment, combining data from both events' cln data
+- all incremental
+  - different from python: no batching, so a full reprocess would be heavy. _imo something to handle via distributed compute or batching, not sure if i'll implement_
+- tests added: unique, not null, relationship
+
+my impression: it's a bit odd relinquishing control of SQL / DDL, but I understand the quality of life dbt can bring.
+
+#### Data Flow
+<h1 align="center">
+  <img src="resources/shipment-events - phase-5-data-flow.png" alt="Shipment Events Phase 5 Data Flow" width="950">
+</h1>
+
+#### Overview
+<h1 align="center">
+  <img src="resources/shipment-events - phase-5.png" alt="Shipment Events Phase 5" width="950">
+</h1>
+
+The tricky thing in dbt was getting the shipment entity to work incrementally as it has two separate sources feeding it (aka -> need to track two separate timestamps/offsets). Ultimately, I went for storing both indicators as meta fields. Not the most scalable solution (i.e. imagine having 10 timestamps to track), but in this context it works.
 
 
 ### Phase 4 - Cleansed -> Curated 2026-04-23
@@ -110,8 +141,9 @@ Curated is working!
 - tracking run history in meta.pipeline_run
 - additive traceability in meta fields: see what cln data was merged into a single cln record.
 
+#### Overview
 <h1 align="center">
-  <img src="resources/shipment-events - phase-4.png" alt="Shipment Events Phase 3" width="950">
+  <img src="resources/shipment-events - phase-4.png" alt="Shipment Events Phase 4" width="950">
 </h1>
 
 
@@ -125,6 +157,7 @@ Cleansed is working!
 - tracking run history in meta.pipeline_run
 - additive traceability in meta fields: see what raw data was merged into a single cln record.
 
+#### Overview
 <h1 align="center">
   <img src="resources/shipment-events - phase-3.png" alt="Shipment Events Phase 3" width="950">
 </h1>
@@ -146,6 +179,7 @@ Evening Update:
 - More tests and refactoring!
 
 
+#### Overview
 <h1 align="center">
   <img src="resources/shipment-events - phase-2.png" alt="Shipment Events Phase 2" width="950">
 </h1>
@@ -164,6 +198,7 @@ What I did:
 - set up postgres users & permissions for admin, rw, r, consumer
 - setup raw ingestion flow pictured below (using rw role)
 
+#### Overview
 <h1 align="center">
   <img src="resources/shipment-events - phase-1.png" alt="Shipment Events Phase 1" width="950">
 </h1>
