@@ -169,9 +169,14 @@ WITH sp_input AS (
         , NOW() AS meta_update_tmst
         , shipment_grouped.meta_latest_sp_offset_id
         , shipment_grouped.meta_latest_ss_offset_id
+        , ROW_NUMBER() OVER (
+            PARTITION BY shipment_input.shipment_uuid
+            ORDER BY shipment_input.meta_latest_ss_offset_id, shipment_grouped.meta_latest_sp_offset_id  DESC
+        ) AS rn--take the latest record arbitrarily if there are multiple with the same tmst
     FROM shipment_input
     INNER JOIN shipment_grouped
         ON shipment_input.shipment_uuid = shipment_grouped.shipment_uuid
         AND shipment_input.meta_source_tmst = shipment_grouped.latest_source_tmst
 )
 SELECT * FROM shipment_latest
+WHERE rn = 1
