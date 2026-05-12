@@ -42,7 +42,7 @@ jobs:
         run: cp .env.example .env
 
       - name: Ingest, curate, dbt build
-        run: make setup && make run && make dbtbuild
+        run: make setup && make run && make dbtdeps && make dbtbuild
 
       - name: Upload dbt diagnostic artifacts
         if: failure()
