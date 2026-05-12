@@ -107,6 +107,17 @@ project-structure/
 
 ## Version Updates
 
+### Phase 5.2 - Github Actions
+- added a workflow to:
+  - check python typing with mypy
+  - check pytests
+  - run dbt build
+    - note: this should be reworked to use test data / dev envt.
+    - as this projects currently very small, i'm just running everything, but you wouldn't do that in a real envt
+
+### Phase 5.1 - dbt docs
+- added some make commands to generate and serve the docs locally
+
 ### Phase 5 - dbt: Cleansed -> Curated 2026-05-12
 
 dbt has been implemented!
