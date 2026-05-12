@@ -330,11 +330,8 @@ It took a lot of time to land on how I wanted to do curated because of endlessly
     - `make dbtmakeclnsrc` - regenerate dbt sources with a dbt run-operation inside the container
 - freshness
     - not going to add for now
-
-
-# to do
 - tests
-    - will add once i have shipment working.
+    - added not null, unique, and relationship tests
 
 
 ## Learned

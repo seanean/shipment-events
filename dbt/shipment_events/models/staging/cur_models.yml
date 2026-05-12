@@ -1,4 +1,44 @@
 models:
+  - name: cur_shipment
+    description: Curated shipment data.
+    columns:
+      - name: shipment_uuid
+        data_tests:
+          - not_null
+          - unique
+      - name: shipment_business_id
+        data_tests:
+          - not_null
+      - name: shipment_technical_id
+        data_tests:
+          - not_null
+      - name: shipment_type
+        data_tests:
+          - not_null
+      - name: meta_source_latest_file_path
+        data_tests:
+          - not_null
+      - name: meta_source_event_type_lst
+        data_tests:
+          - not_null
+      - name: meta_source_file_path_lst
+        data_tests:
+          - not_null
+      - name: meta_root_business_key
+        data_tests:
+          - not_null
+      - name: meta_source_tmst
+        data_tests:
+          - not_null
+      - name: meta_insert_tmst
+        data_tests:
+          - not_null
+      - name: meta_update_tmst
+        data_tests:
+          - not_null
+      - name: meta_latest_sp_offset_id
+      - name: meta_latest_ss_offset_id
+
   - name: cur_shipment_products
     description: Curated shipment_products data.
     columns:
@@ -7,16 +47,42 @@ models:
           - not_null
           - unique
       - name: shipment_uuid
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('cur_shipment')
+                field: shipment_uuid
       - name: product_id
+        data_tests:
+          - not_null
       - name: product_qty
+        data_tests:
+          - not_null
       - name: meta_source_latest_file_path
+        data_tests:
+          - not_null
       - name: meta_source_event_type_lst
+        data_tests:
+          - not_null
       - name: meta_source_file_path_lst
+        data_tests:
+          - not_null
       - name: meta_root_business_key
+        data_tests:
+          - not_null
       - name: meta_source_tmst
+        data_tests:
+          - not_null
       - name: meta_insert_tmst
+        data_tests:
+          - not_null
       - name: meta_update_tmst
+        data_tests:
+          - not_null
       - name: meta_raw_offset_id
+        data_tests:
+          - not_null
 
   - name: cur_shipment_status
     description: Curated shipment_status data.
@@ -26,13 +92,39 @@ models:
           - not_null
           - unique
       - name: shipment_uuid
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('cur_shipment')
+                field: shipment_uuid
       - name: shipment_status
+        data_tests:
+          - not_null
       - name: shipment_status_tmst
+        data_tests:
+          - not_null
       - name: meta_source_latest_file_path
+        data_tests:
+          - not_null
       - name: meta_source_event_type_lst
+        data_tests:
+          - not_null
       - name: meta_source_file_path_lst
+        data_tests:
+          - not_null
       - name: meta_root_business_key
+        data_tests:
+          - not_null
       - name: meta_source_tmst
+        data_tests:
+          - not_null
       - name: meta_insert_tmst
+        data_tests:
+          - not_null
       - name: meta_update_tmst
+        data_tests:
+          - not_null
       - name: meta_raw_offset_id
+        data_tests:
+          - not_null
