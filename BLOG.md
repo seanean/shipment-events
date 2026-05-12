@@ -288,23 +288,51 @@ It took a lot of time to land on how I wanted to do curated because of endlessly
 |Handling failed batches|If an insert of a batch to cur fails, my transaction won't continue to the `insert pipeline run history` step, so I'll have to detect if it failed and insert that failure manually. Because I'm using SQLAlchemy with psycopg, it raises its own exceptions (i.e. sqlalchemy.exc.SQLAlchemyError) instead of feeding the [psycopg errors](https://www.psycopg.org/psycopg3/docs/api/errors.html#db-api-exceptions) directly. So, I need to catch the sqlalchemy exceptions (or just exception in general), if I want to detect when batches fail. If caught, then I can trigger the pipeline failed insert. | 
 
 
-## Phase 4.5 - Curated based on timestamps
-
-I built phase 4 using raw_offset_id. I decided to swap this to event timestamp as it will mesh better with dbt incremental.
-
 ## Phase 5 - dbt
 
 ## Did
 
-- Spent a lot of time figuring out dbt x Docker x Postgres:
-    - what dbt Docker image to use (create my own)
-    - what Python Docker image to use + what packages
-    - what dbt-postgres & dbt-core packages to use
-    - user setup to prevent access conflicts (ctr vs local)
-    - Docker network mode for efficient x-container communication
-    - dbt profile setup
-- watched a ton of the fundamentals courses on dbt learn.
-- drafted an initial dbt design and am diving into it with AI to determine what the migration would really need (i.e. how is state tracked - can i keep using my pipeline-run table? how do i handle my complex merge logic for my lst columns?)
+- setup
+    - Spent a lot of time figuring out dbt x Docker x Postgres:
+        - what dbt Docker image to use (create my own)
+        - what Python Docker image to use + what packages
+        - what dbt-postgres & dbt-core packages to use
+        - user setup to prevent access conflicts (ctr vs local)
+        - Docker network mode for efficient x-container communication
+        - dbt profile setup
+- training
+    - watched a ton of the fundamentals courses on dbt learn.
+- built models
+    - from batch_per_event
+    - to:
+        - stg_per_event
+        - cur_per_table
+    - all incremental
+    - shipment_products with a post-hook to delete orphan records
+        - not convinced it's the most elegant way (my python approach was better), but it checks if result NOT IN stage, where stage maintains current version per root key.
+- tried out codegen
+    - regenerated my cln sources using it (handy to not type column names!)
+- put my models in the right schemas + updated init scripts
+    - turns out your project schema is a prefix if you want to specify schemas on models specifically (project: dbt, model: cur, result: dbt_cur)
+- configuration
+    - checked out the [options](https://docs.getdbt.com/reference/model-configs)
+    - added indexes
+        - cur: pks, fks
+        - stg: raw_offset_id (used in incremental logic)
+    - correct update columns on merge (don't update the insert tmst, update everything else tho.)
+- incremental testing:
+    - added some new make commands to facilitate testing incremental logic by moving in 2 additional files after the first run
+    - `make increment`
+- dbt commands
+    - added a bunch to facilitate running
+    - `make dbtrun` - run dbt models via a Docker Compose dbt service
+    - `make dbtdeps` - install dbt dependencies using Docker Compose
+    - `make dbtmakeclnsrc` - regenerate dbt sources with a dbt run-operation inside the container
+- freshness
+    - not going to add for now
+- tests
+    - added not null, unique, and relationship tests
+
 
 ## Learned
 
@@ -316,3 +344,4 @@ I built phase 4 using raw_offset_id. I decided to swap this to event timestamp a
 |dbt / dbt-postgres Docker files|The images pushed don't seem to align with the newest version of dbt-postgres on pypi. Maybe I'm misunderstanding something. I decided to just build my own Dockerfile based on the existing one + updating to Trixie (+ upgrading debian packages), using dbt-core 1.10.20 and dbt-postgres 1.10.|
 |dbt folder setup on container| ending up with: `Docker compose run --rm -it -w /usr/app dbt-svc init shipment_events` so project is under /usr/app. setting `working_dir` in compose to `/usr/app/shipment_events` leads to dbt commands executing successfully. i'm also doing something _kind of_ weird by binding profiles to `/usr/app/profiles/profiles.yml` which mean it ends up within my dbt project folder (even though it's not a project-level file). w/e though, it's not a big deal. |
 |dbt fundamentals| learned a lot of stuff from the following trainings, notes in my private learnings repo to help me use the knowledge [dbt fundamentals, materialization fundamentals, incremental models, jinja macros packages, analyses and seeds, exposure, advanced testing, snapshots] |
+|dbt incremental| took a lot of time to grasp how I would work with dbt incremental logic (how to deal with late arriving events? how do I handle orphan records _via posthooks_? how do I make sure I'm merging existing records with incrementally selected records if needed? (_i.e. if an existing key got a new event, I don't want to load it again, I want to overwrite_), if I use timestamps what happens if a new event with the same timestamp comes in since previous load?) |

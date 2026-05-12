@@ -1,0 +1,20 @@
+{
+    "event_name": "shipmentProductsAllocated",
+    "event_timestamp": "2026-06-05T11:00:00Z",
+    "event_id": "e8",
+    "event_data": {
+        "shipment_id": "s1",
+        "shipment_business_id": "sh_6",
+        "shipment_type": "ecommerce",
+        "products": [
+            {
+                "product_id": "p6",
+                "product_quantity": 6
+            },
+            {
+                "product_id": "p7",
+                "product_quantity": 4
+            }
+        ]
+    }
+}

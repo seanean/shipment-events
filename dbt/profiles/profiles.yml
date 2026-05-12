@@ -9,4 +9,4 @@ shipment_events:
       password: "{{ env_var('POSTGRES_RW_PW') }}"
       dbname: "{{ env_var('POSTGRES_DB') }}"
       connect_timeout: 10 # default
-      schema: cur
+      schema: dbt

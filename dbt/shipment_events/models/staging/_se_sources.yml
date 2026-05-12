@@ -1,0 +1,56 @@
+version: 2
+
+sources:
+  - name: shipment_events_cln
+    database: shipments
+    schema: cln
+    tables:
+      - name: shipment_products
+        columns:
+          - name: event_id
+            data_type: character varying
+          - name: event_tmst
+            data_type: timestamp with time zone
+          - name: event_name
+            data_type: character varying
+          - name: event_type
+            data_type: character varying
+          - name: payload_cln
+            data_type: jsonb
+          - name: raw_offset_id
+            data_type: bigint
+          - name: raw_offset_id_lst
+            data_type: character varying
+          - name: meta_insert_tmst
+            data_type: timestamp with time zone
+          - name: meta_update_tmst
+            data_type: timestamp with time zone
+          - name: meta_source_file_path
+            data_type: character varying
+          - name: meta_source_file_path_lst
+            data_type: character varying
+
+      - name: shipment_status
+        columns:
+          - name: event_id
+            data_type: character varying
+          - name: event_tmst
+            data_type: timestamp with time zone
+          - name: event_name
+            data_type: character varying
+          - name: event_type
+            data_type: character varying
+          - name: payload_cln
+            data_type: jsonb
+          - name: raw_offset_id
+            data_type: bigint
+          - name: raw_offset_id_lst
+            data_type: character varying
+          - name: meta_insert_tmst
+            data_type: timestamp with time zone
+          - name: meta_update_tmst
+            data_type: timestamp with time zone
+          - name: meta_source_file_path
+            data_type: character varying
+          - name: meta_source_file_path_lst
+            data_type: character varying
