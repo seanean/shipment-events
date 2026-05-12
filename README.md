@@ -35,11 +35,12 @@ Want to read about the project? Check the [project blog](BLOG.md).
 - `CICD with Github Actions`
 - ✔`PostgreSQL`
 - ✔`Database access management`
-- `dbt`
+- ✔`dbt`
 - `Spark / PySpark`
 - ✔`Idempotent pipelines`
-- `Checkpoints`
-  - ✔ Kinda, using pipeline_run history table.
+  - ✔ dbt
+  - ✔ python/PostgreSQL
+- ✔ `Checkpoints` (kinda, using pipeline_run history table).
 - `Airflow`
 - `Reprocessing`
 - `Dead letter queue`
@@ -95,6 +96,8 @@ project-structure/
 - `make dbtbuild` — `dbt build`
 - `make dbtdeps` — `dbt deps`
 - `make dbtmakeclnsrc` — `dbt run-operation generate_source` for schema `cln` (column metadata)
+- `make dbtdocgen` — `dbt docs generate`
+- `make dbtdocserve` — `dbt docs serve` so they're accessible on http://localhost:8080
 
 **Checks**
 

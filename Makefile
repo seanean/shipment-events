@@ -92,3 +92,9 @@ dbtdeps:
 
 dbtmakeclnsrc:
 	docker compose -f compose.yaml -f compose.dbt.yaml run --rm -it dbt-svc run-operation generate_source --args '{"schema_name": "cln", "generate_columns": true}'
+
+dbtdocgen:
+	docker compose -f compose.yaml -f compose.dbt.yaml run --rm -it dbt-svc docs generate
+
+dbtdocserve:
+	docker compose -f compose.yaml -f compose.dbt.yaml run --rm -it --service-ports dbt-svc docs serve --host 0.0.0.0 --port 8080
