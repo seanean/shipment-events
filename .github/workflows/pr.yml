@@ -1,0 +1,45 @@
+name: PR-CI
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-py:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Run pytest
+        run: make setup-dev && make setup && make test
+
+  test-mypy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Run mypy
+        run: make setup-dev && make setup && make mypy
+
+  test-dbt:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Create .env for compose
+        run: cp .env.example .env
+
+      - name: Ingest, curate, dbt build
+        run: make setup && make run && make dbtbuild
