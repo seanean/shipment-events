@@ -43,3 +43,15 @@ jobs:
 
       - name: Ingest, curate, dbt build
         run: make setup && make run && make dbtbuild
+
+      - name: Upload dbt diagnostic artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dbt-target-${{ github.run_id }}
+          path: |  
+            dbt/shipment_events/logs/
+            dbt/shipment_events/target/logs/
+            dbt/shipment_events/target/run/
+            dbt/shipment_events/target/compiled/
+          if-no-files-found: ignore
