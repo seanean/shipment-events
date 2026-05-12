@@ -82,19 +82,19 @@ rerun:
 	make resetall && make composeup && make raw && make cleanse && make curate
 
 dbtrun:
-	docker compose -f compose.yaml -f compose.dbt.yaml run --rm -it dbt-svc run
+	docker compose -f compose.yaml -f compose.dbt.yaml run --rm dbt-svc run
 
 dbtbuild:
-	docker compose -f compose.yaml -f compose.dbt.yaml run --rm -it dbt-svc build
+	docker compose -f compose.yaml -f compose.dbt.yaml run --rm dbt-svc build
 
 dbtdeps:
-	docker compose -f compose.yaml -f compose.dbt.yaml run --rm -it dbt-svc deps
+	docker compose -f compose.yaml -f compose.dbt.yaml run --rm dbt-svc deps
 
 dbtmakeclnsrc:
-	docker compose -f compose.yaml -f compose.dbt.yaml run --rm -it dbt-svc run-operation generate_source --args '{"schema_name": "cln", "generate_columns": true}'
+	docker compose -f compose.yaml -f compose.dbt.yaml run --rm dbt-svc run-operation generate_source --args '{"schema_name": "cln", "generate_columns": true}'
 
 dbtdocgen:
-	docker compose -f compose.yaml -f compose.dbt.yaml run --rm -it dbt-svc docs generate
+	docker compose -f compose.yaml -f compose.dbt.yaml run --rm dbt-svc docs generate
 
 dbtdocserve:
-	docker compose -f compose.yaml -f compose.dbt.yaml run --rm -it --service-ports dbt-svc docs serve --host 0.0.0.0 --port 8080
+	docker compose -f compose.yaml -f compose.dbt.yaml run --rm --service-ports dbt-svc docs serve --host 0.0.0.0 --port 8080
