@@ -51,7 +51,7 @@
                             },
                             "product_quantity": {
                                 "description": "The quantity of the product.",
-                                "type": "number"
+                                "type": "integer"
                             }
                         },
                         "required": [

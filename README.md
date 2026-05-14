@@ -81,6 +81,7 @@ project-structure/
 - `make cleanse` — run cleanse pipeline (`src/cleanse.py`)
 - `make curate` — run curated layer (`src/curate.py`)
 - `make increment` — move files from `landing-zone/to-incrementally-move-in/` to `pending/`, then `raw`, `cleanse`, `curate`
+- `make generate` — generate payloads of both event types into `landing-zone/pending/`
 - `make run` — `composeup`, then `raw`, then `cleanse`, then `curate` (full stack in order)
 - `make rerun` — `resetall`, then same as `run` (clean DB + LZ, then full pipeline)
 
@@ -106,6 +107,10 @@ project-structure/
 ---
 
 ## Version Updates
+
+### Phase 5.3 - Event Generator
+- created (with AI assistance) an event generator that can be triggered to populate the landing zone.
+
 
 ### Phase 5.2 - Github Actions
 - added a workflow to:
