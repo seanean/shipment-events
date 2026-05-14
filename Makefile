@@ -38,7 +38,7 @@ generate:
 	@if [ ! -x ".venv/bin/python" ]; then \
 		echo "Run 'make setup' first."; exit 1; \
 	fi
-	.venv/bin/python src/event-gen.py
+	.venv/bin/python src/event_gen.py
 
 cleanse: # check if python exists and is executable
 	@if [ ! -x ".venv/bin/python" ]; then \

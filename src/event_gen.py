@@ -5,9 +5,9 @@ Uses the same config and validation path as ingest_raw (get_config → resolve_c
 get_schema → validate_schema → validate_file).
 
 Examples:
-    .venv/bin/python src/event-gen.py
-    .venv/bin/python src/event-gen.py --partition-date 2026-05-12 -n 10
-    .venv/bin/python src/event-gen.py --seed 42
+    .venv/bin/python src/event_gen.py
+    .venv/bin/python src/event_gen.py --partition-date 2026-05-12 -n 10
+    .venv/bin/python src/event_gen.py --seed 42
 """
 
 import argparse
